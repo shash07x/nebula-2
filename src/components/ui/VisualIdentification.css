@@ -1,0 +1,42 @@
+.vi-exercise { background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); padding: 24px; }
+.vi-header h3 { margin: 0 0 4px; }
+.vi-instruction { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px; }
+
+.vi-labels-pool { margin-bottom: 20px; padding: 16px; background: rgba(59,109,224,0.03); border-radius: 12px; border: 1px dashed rgba(59,109,224,0.15); }
+.vi-pool-title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-blue); display: block; margin-bottom: 10px; }
+.vi-labels-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vi-label { padding: 8px 14px; background: var(--bg-primary); border: 1px solid var(--accent-blue); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: grab; user-select: none; display: flex; align-items: center; gap: 6px; transition: all 0.15s; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+.vi-label:hover { box-shadow: 0 4px 12px rgba(59,109,224,0.15); transform: translateY(-1px); }
+.vi-label:active { cursor: grabbing; }
+.vi-label.dragging { opacity: 0.4; }
+.vi-grip { color: var(--text-muted); }
+.vi-all-placed { font-size: 0.78rem; color: var(--accent-green); font-weight: 600; }
+
+.vi-zones-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.vi-zone { padding: 12px 16px; background: rgba(0,0,0,0.02); border: 2px dashed var(--border-subtle); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s; min-height: 48px; }
+.vi-zone.drop-ready { border-color: rgba(59,109,224,0.3); background: rgba(59,109,224,0.02); }
+.vi-zone.filled { border-style: solid; border-color: var(--accent-blue); background: rgba(59,109,224,0.04); }
+.vi-zone.correct { border-color: var(--accent-green); background: rgba(0,230,118,0.06); }
+.vi-zone.wrong { border-color: #ff5252; background: rgba(255,82,82,0.06); }
+
+.vi-zone-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.vi-zone-number { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+.vi-zone-desc { font-size: 0.78rem; color: var(--text-secondary); font-style: italic; }
+
+.vi-zone-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.vi-zone-placeholder { color: var(--text-muted); font-size: 0.72rem; font-style: italic; padding: 4px 12px; border: 1px dashed var(--border-subtle); border-radius: 6px; }
+.vi-zone-content { display: flex; align-items: center; gap: 8px; }
+.vi-placed-label { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); background: rgba(59,109,224,0.08); padding: 4px 12px; border-radius: 6px; }
+.vi-remove-btn { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,82,82,0.1); border: none; color: #ff5252; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.vi-remove-btn:hover { background: rgba(255,82,82,0.2); }
+.vi-correct { color: var(--accent-green); }
+.vi-wrong { color: #ff5252; }
+.vi-correct-answer { font-size: 0.7rem; color: var(--accent-green); font-weight: 500; }
+
+.vi-actions { display: flex; justify-content: center; gap: 12px; }
+.vi-submit-btn { padding: 10px 24px; border-radius: 10px; background: var(--gradient-primary); color: #fff; font-weight: 600; border: none; cursor: pointer; font-size: 0.85rem; }
+.vi-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.vi-result { display: flex; align-items: center; gap: 16px; }
+.vi-score { font-weight: 700; font-size: 0.95rem; color: var(--accent-blue); }
+.vi-score.perfect { color: var(--accent-green); }
+.vi-retry-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; background: rgba(0,0,0,0.04); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; }

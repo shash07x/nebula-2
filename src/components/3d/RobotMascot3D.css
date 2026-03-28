@@ -1,0 +1,128 @@
+.mascot-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.mascot-canvas {
+  width: 140px;
+  height: 170px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, rgba(79, 140, 255, 0.08), transparent 70%);
+  cursor: pointer;
+  transition: box-shadow 0.3s;
+}
+.mascot-canvas:hover {
+  box-shadow: 0 0 30px rgba(79, 140, 255, 0.2);
+}
+
+.mascot-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+}
+.mascot-name span {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+.mascot-minimize {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.mascot-minimize:hover { color: var(--text-primary); }
+
+/* Action menu */
+.mascot-menu {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  min-width: 150px;
+}
+.mascot-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background 0.2s;
+  text-align: left;
+}
+.mascot-action:hover {
+  background: rgba(79, 140, 255, 0.1);
+}
+.mascot-action-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.035);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mini button */
+.mascot-mini-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+.mascot-mini-btn:hover {
+  border-color: #4f8cff;
+  box-shadow: 0 0 20px rgba(79, 140, 255, 0.3);
+}
+
+/* Light mode */
+[data-theme="light"] .mascot-menu {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .mascot-action:hover {
+  background: rgba(79, 140, 255, 0.08);
+}
+[data-theme="light"] .mascot-action-icon {
+  background: rgba(0, 0, 0, 0.04);
+}
+

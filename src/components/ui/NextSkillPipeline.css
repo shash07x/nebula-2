@@ -1,0 +1,19 @@
+.nsp-section { margin-top: 32px; }
+.nsp-header { margin-bottom: 20px; }
+.nsp-header h3 { margin: 0 0 4px; font-size: 1.1rem; }
+.nsp-subtitle { font-size: 0.82rem; color: var(--text-secondary); }
+
+.nsp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.nsp-card { position: relative; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 8px; transition: box-shadow 0.2s; overflow: hidden; }
+.nsp-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+.nsp-card.locked { opacity: 0.6; pointer-events: none; }
+.nsp-card-icon { font-size: 2rem; margin-bottom: 4px; }
+.nsp-card h4 { margin: 0; font-size: 1rem; }
+.nsp-card-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; flex: 1; }
+.nsp-card-meta { display: flex; flex-direction: column; gap: 6px; font-size: 0.7rem; color: var(--text-muted); }
+.nsp-card-meta span { display: flex; align-items: center; gap: 4px; }
+
+.nsp-locked-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-size: 0.75rem; font-weight: 500; }
+[data-theme="dark"] .nsp-locked-overlay { background: rgba(0,0,0,0.5); }
+
+.nsp-start-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 8px 18px; border-radius: 8px; background: var(--gradient-primary); color: #fff; font-weight: 600; font-size: 0.78rem; border: none; cursor: pointer; align-self: flex-start; }

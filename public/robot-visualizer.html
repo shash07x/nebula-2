@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula High-Fidelity Robot Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(15, 23, 42, 0.85);
+            --text-color: #f1f5f9;
+            --accent-color: #0ea5e9;
+            --accent-hover: #38bdf8;
+            --border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-color);
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 220px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            max-height: calc(100vh - 24px);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        #ui-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #ui-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #ui-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        h1 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .value-display {
+            font-family: 'Menlo', 'Monaco', monospace;
+            color: var(--accent-color);
+            font-size: 0.65rem;
+        }
+
+        /* Modern Range Input */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+            margin: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--text-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 3px var(--accent-color);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Robot Selector */
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 12px;
+        }
+
+        select:focus {
+            border-color: var(--accent-color);
+        }
+
+        .info-panel {
+            font-size: 0.6rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Fullscreen button */
+        #fullscreen-btn {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            z-index: 20;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s, transform 0.2s;
+        }
+        #fullscreen-btn:hover {
+            background: rgba(14, 165, 233, 0.2);
+            transform: scale(1.05);
+        }
+        #fullscreen-btn svg { width: 16px; height: 16px; }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <button id="fullscreen-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+        <span id="fs-label">Fullscreen</span>
+    </button>
+
+    <div id="ui-container">
+        <h1>Robot Control & Phys.</h1>
+
+        <div class="control-group">
+            <select id="robot-select">
+                <option value="articulated">6-Axis Industrial Arm</option>
+                <option value="scara">High-Speed SCARA</option>
+                <option value="cartesian">Precision Gantry (XYZ)</option>
+                <option value="delta">Delta Robot (Parallel)</option>
+                <option value="cylindrical">Cylindrical Robot (RPP)</option>
+                <option value="polar">Polar/Spherical Robot (RRP)</option>
+            </select>
+        </div>
+
+        <div class="control-group"
+            style="padding-bottom: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <input type="checkbox" id="envelope-toggle" checked style="width: auto; height: auto;">
+            <label for="envelope-toggle" style="margin: 0; cursor: pointer; font-size: 0.65rem;">Show Envelope</label>
+        </div>
+
+        <div id="controls-area"></div>
+
+        <div class="info-panel">
+            Left Click: Rotate &bull; Right Click: Pan &bull; Scroll: Zoom
+        </div>
+    </div>
+
+    <script>
+        // --- High-Fidelity Configuration ---
+
+        const CONFIG = {
+            articulated: {
+                joints: [
+                    { id: 'j1', name: 'Base Swivel', min: -180, max: 180, val: 0, unit: '°' },
+                    { id: 'j2', name: 'Shoulder', min: -90, max: 83, val: -20, unit: '°' },
+                    { id: 'j3', name: 'Elbow', min: -150, max: 150, val: 45, unit: '°' },
+                    { id: 'j4', name: 'Wrist 1 (Rot)', min: -180, max: 180, val: 0, unit: '°' },
+                    { id: 'j5', name: 'Wrist 2 (Bend)', min: -100, max: 100, val: -25, unit: '°' },
+                    { id: 'j6', name: 'Wrist 3 (Spin)', min: -360, max: 360, val: 0, unit: '°' }
+                ]
+            },
+            scara: {
+                joints: [
+                    { id: 's1', name: 'Shoulder (J1)', min: -150, max: 150, val: 30, unit: '°' },
+                    { id: 's2', name: 'Elbow (J2)', min: -150, max: 150, val: -45, unit: '°' },
+                    // Physics Fix: Max depth restricted so it doesn't clip floor
+                    { id: 's3', name: 'Quill Z-Axis', min: 0.09, max: 0.35, val: 0.2, unit: 'm', step: 0.005 },
+                    { id: 's4', name: 'Quill Rotation', min: -360, max: 360, val: 0, unit: '°' }
+                ]
+            },
+            cartesian: {
+                joints: [
+                    { id: 'c1', name: 'X-Gantry', min: 0, max: 1.0, val: 0.5, unit: 'm', step: 0.01 },
+                    { id: 'c2', name: 'Y-Carriage', min: 0, max: 1.0, val: 0.5, unit: 'm', step: 0.01 },
+                    { id: 'c3', name: 'Z-Slide', min: 0, max: 0.45, val: 0.1, unit: 'm', step: 0.01 }
+                ]
+            },
+            delta: {
+                joints: [
+                    { id: 'd1', name: 'X-Pos', min: -0.3, max: 0.3, val: 0, unit: 'm', step: 0.01 },
+                    { id: 'd2', name: 'Y-Pos', min: -0.3, max: 0.3, val: 0, unit: 'm', step: 0.01 },
+                    { id: 'd3', name: 'Height (Z)', min: 0.1, max: 0.7, val: 0.4, unit: 'm', step: 0.01 }
+                ]
+            },
+            cylindrical: {
+                joints: [
+                    { id: 'cy1', name: 'Base Rot (Theta)', min: -180, max: 180, val: 0, unit: '°' },
+                    { id: 'cy2', name: 'Elevation (Z)', min: 0, max: 1.0, val: 0.5, unit: 'm', step: 0.01 },
+                    { id: 'cy3', name: 'Extension (R)', min: 0, max: 0.6, val: 0.2, unit: 'm', step: 0.01 }
+                ]
+            },
+            polar: {
+                joints: [
+                    { id: 'p1', name: 'Base Rot (Theta)', min: -180, max: 180, val: 0, unit: '°' },
+                    { id: 'p2', name: 'Pitch (Beta)', min: -14, max: 90, val: 30, unit: '°' },
+                    { id: 'p3', name: 'Extension (R)', min: 0, max: 0.6, val: 0.2, unit: 'm', step: 0.01 }
+                ]
+            }
+        };
+
+        // --- Realistic Materials ---
+        let TEXTURE_Loader;
+        let MAT = {};
+
+        // --- Global State ---
+        let scene, camera, renderer, controls;
+        let robotRoot;
+        let currentRobotType = '';
+        let currentJoints = [];
+        let robotParts = {};
+
+        function init() {
+            try {
+                if (typeof THREE === 'undefined') throw new Error("Three.js not loaded. Please check your internet connection.");
+
+                TEXTURE_Loader = new THREE.TextureLoader();
+                MAT = {
+                    orangePaint: new THREE.MeshPhysicalMaterial({
+                        color: 0xff6b00, roughness: 0.3, metalness: 0.1,
+                        clearcoat: 0.8, clearcoatRoughness: 0.1
+                    }),
+                    darkMetal: new THREE.MeshStandardMaterial({
+                        color: 0x1e293b, roughness: 0.4, metalness: 0.8
+                    }),
+                    chrome: new THREE.MeshStandardMaterial({
+                        color: 0xffffff, roughness: 0.1, metalness: 1.0
+                    }),
+                    aluProfile: new THREE.MeshStandardMaterial({
+                        color: 0xcbd5e1, roughness: 0.5, metalness: 0.6
+                    }),
+                    floor: new THREE.MeshStandardMaterial({
+                        color: 0x0f172a, roughness: 0.8, metalness: 0.2
+                    }),
+                    jointCover: new THREE.MeshPhysicalMaterial({
+                        color: 0x333333, roughness: 0.7, metalness: 0.1
+                    }),
+                    envelope: new THREE.MeshBasicMaterial({
+                        color: 0x0ea5e9, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false
+                    })
+                };
+
+                // Setup Scene
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0a0a);
+                scene.fog = new THREE.Fog(0x0a0a0a, 4, 12);
+
+                // Camera Setup
+                camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+                camera.position.set(2.5, 2.0, 3.5);
+
+                // Renderer
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.physicallyCorrectLights = true;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.outputEncoding = THREE.sRGBEncoding;
+                document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+                // Controls
+                if (typeof THREE.OrbitControls === 'undefined') {
+                    // Fallback if OrbitControls isn't attached globally yet (unlikely with this script order but safe to check)
+                    console.warn("OrbitControls not found globally.");
+                } else {
+                    controls = new THREE.OrbitControls(camera, renderer.domElement);
+                    controls.enableDamping = true;
+                    controls.dampingFactor = 0.05;
+                    controls.minDistance = 1;
+                    controls.maxDistance = 10;
+                    controls.maxPolarAngle = Math.PI / 2 - 0.05; // Stay above ground
+                    controls.target.set(0, 0.8, 0);
+                }
+
+                // --- Lighting (Bright & Uniform) ---
+                // 1. Hemisphere Light (Sky/Ground fill)
+                const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 2.0);
+                hemiLight.position.set(0, 50, 0);
+                scene.add(hemiLight);
+
+                // 2. Main Directional Light (Sun-like key light)
+                const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+                dirLight.position.set(5, 10, 7);
+                dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 2048;
+                dirLight.shadow.mapSize.height = 2048;
+                dirLight.shadow.bias = -0.0001;
+                dirLight.shadow.normalBias = 0.02; // Reduces shadow acne
+
+                // Expand shadow frustum to cover full robot range
+                const d = 5;
+                dirLight.shadow.camera.left = -d;
+                dirLight.shadow.camera.right = d;
+                dirLight.shadow.camera.top = d;
+                dirLight.shadow.camera.bottom = -d;
+                scene.add(dirLight);
+
+                // 3. Fill Light (Softens shadows from the other side)
+                const fillLight = new THREE.DirectionalLight(0xeef2ff, 1.5);
+                fillLight.position.set(-5, 5, -5);
+                scene.add(fillLight);
+
+                // 4. Overhead Fill
+                const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
+                topLight.position.set(0, 10, 0);
+                scene.add(topLight);
+
+                // --- Environment ---
+                createEnvironment();
+
+                // Event Listeners
+                window.addEventListener('resize', onResize);
+                document.getElementById('robot-select').addEventListener('change', (e) => loadRobot(e.target.value));
+
+                // Envelope Toggle Listener
+                document.getElementById('envelope-toggle').addEventListener('change', (e) => {
+                    if (robotRoot) {
+                        const env = robotRoot.getObjectByName('workEnvelope');
+                        if (env) env.visible = e.target.checked;
+                    }
+                });
+
+                // Initial Load
+                loadRobot('articulated');
+                animate();
+
+                // Remove Loader
+                const l = document.getElementById('loader');
+                if (l) {
+                    l.style.opacity = '0';
+                    setTimeout(() => l.remove(), 500);
+                }
+
+            } catch (err) {
+                console.error("Init Error:", err);
+                const l = document.getElementById('loader');
+                if (l) {
+                    l.innerHTML = `<div style='color:#ff6b6b; text-align:center; font-family:sans-serif;'>
+                        <h3>Error Loading Visualizer</h3>
+                        <p>${err.message}</p>
+                        <p style='font-size:0.8rem; color:#aaa'>Check console for details.</p>
+                    </div>`;
+                }
+            }
+        }
+
+        function createEnvironment() {
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = MAT.floor;
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Grid
+            const grid = new THREE.GridHelper(20, 40, 0x334155, 0x1e293b);
+            grid.position.y = 0.001;
+            scene.add(grid);
+        }
+
+        function onResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        // --- Robot Logic ---
+
+        function clearRobot() {
+            if (robotRoot) {
+                scene.remove(robotRoot);
+                robotRoot = null;
+            }
+            robotParts = {};
+            document.getElementById('controls-area').innerHTML = '';
+        }
+
+        function loadRobot(type) {
+            clearRobot();
+            currentRobotType = type;
+            const config = JSON.parse(JSON.stringify(CONFIG[type]));
+            currentJoints = config.joints;
+
+            buildUI(currentJoints);
+
+            robotRoot = new THREE.Group();
+            scene.add(robotRoot);
+
+            if (type === 'articulated') buildArticulated(robotRoot);
+            if (type === 'scara') buildScara(robotRoot);
+            if (type === 'cartesian') buildCartesian(robotRoot);
+            if (type === 'delta') buildDelta(robotRoot);
+            if (type === 'cylindrical') buildCylindrical(robotRoot);
+            if (type === 'polar') buildPolar(robotRoot);
+
+            addWorkEnvelope(type, robotRoot);
+
+            updatePose();
+        }
+
+        function addWorkEnvelope(type, parent) {
+            let geo;
+            const mat = MAT.envelope;
+            let mesh;
+
+            if (type === 'articulated') {
+                // Sphere representing max reach approx 1.2m
+                geo = new THREE.SphereGeometry(1.2, 32, 32);
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.4; // Offset from base
+            } else if (type === 'scara') {
+                // Cylinder representing max reach (Arm1 + Arm2 = 0.5 + 0.4 = 0.9)
+                // Height covers the Z-stroke
+                geo = new THREE.CylinderGeometry(0.9, 0.9, 0.6, 32);
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.4;
+            } else if (type === 'cartesian') {
+                // Box representing Workspace (1.0m X range, 1.0m Y range, 0.45m Z range)
+                // Enlarged to encompass gripper range
+                geo = new THREE.BoxGeometry(1.2, 0.6, 1.2);
+                mesh = new THREE.Mesh(geo, mat);
+                // Center of workspace
+                // Frame offset is (-0.6, -0.6). Range is 0 to 1.0. Center of range is 0.5.
+                // World Center = -0.6 + 0.5 = -0.1.
+                // Height: Gantry ~1.0. Work occurs below. Center ~0.80.
+                mesh.position.set(-0.1, 0.80, -0.1);
+            } else if (type === 'delta') {
+                // Cylinder/Cone for Delta (approx R=0.4, Height=0.6)
+                // Inverted cone shape is more accurate but cylinder is fine for familiarization
+                geo = new THREE.CylinderGeometry(0.4, 0.3, 0.7, 32);
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.45; // Center height
+            } else if (type === 'cylindrical') {
+                // Hollow Cylinder effect (conceptually)
+                // Max radius ~1.6 (Arm reach)
+                geo = new THREE.CylinderGeometry(1.6, 1.6, 1.0, 32);
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.7; // Approx center of vertical travel
+            } else if (type === 'polar') {
+                // Sphere (R ~ 1.9 - slightly reduced)
+                geo = new THREE.SphereGeometry(1.9, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.7); // Cut bottom
+                mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 0.3;
+            }
+
+            if (mesh) {
+                mesh.name = 'workEnvelope';
+                // Set initial visibility
+                const toggle = document.getElementById('envelope-toggle');
+                if (toggle) mesh.visible = toggle.checked;
+
+                // Add a "wireframe" helper for better visibility
+                const wireframe = new THREE.LineSegments(
+                    new THREE.WireframeGeometry(geo),
+                    new THREE.LineBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.3 })
+                );
+                mesh.add(wireframe);
+
+                parent.add(mesh);
+            }
+        }
+
+        function buildUI(joints) {
+            const container = document.getElementById('controls-area');
+            joints.forEach((j, idx) => {
+                const div = document.createElement('div');
+                div.className = 'control-group';
+
+                div.innerHTML = `
+                    <label>
+                        <span>${j.name}</span>
+                        <span id="val-${idx}" class="value-display">${j.val}${j.unit}</span>
+                    </label>
+                `;
+
+                const input = document.createElement('input');
+                input.type = 'range';
+                input.min = j.min;
+                input.max = j.max;
+                input.step = j.step || (j.unit === '°' ? 1 : 0.01);
+                input.value = j.val;
+
+                input.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    j.val = val;
+                    document.getElementById(`val-${idx}`).innerText = val.toFixed(j.unit === '°' ? 0 : 3) + j.unit;
+                    updatePose();
+                });
+
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+        }
+
+        // --- Helper Builders (For detail) ---
+
+        function createCylinder(rTop, rBot, height, material, shadow = true) {
+            const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, height, 32), material);
+            if (shadow) { mesh.castShadow = true; mesh.receiveShadow = true; }
+            return mesh;
+        }
+
+        function createChamferBox(w, h, d, material) {
+            // Simple box for performance, but detailed material
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // --- 1. Articulated Robot (Kuka/Fanuc Style) ---
+        function buildArticulated(parent) {
+            const p = robotParts;
+
+            // Base Pedestal
+            const base = createCylinder(0.15, 0.18, 0.1, MAT.darkMetal);
+            base.position.y = 0.05;
+            parent.add(base);
+
+            // J1 (Swivel Base)
+            p.j1 = new THREE.Group();
+            p.j1.position.y = 0.1;
+            base.add(p.j1);
+
+            const j1Geo = createCylinder(0.14, 0.14, 0.2, MAT.orangePaint);
+            j1Geo.position.y = 0.1;
+            p.j1.add(j1Geo);
+
+            // Shoulder Motor Housing (Visual)
+            const shMotor = createCylinder(0.1, 0.1, 0.2, MAT.darkMetal);
+            shMotor.rotation.z = Math.PI / 2;
+            shMotor.position.set(0, 0.15, 0);
+            p.j1.add(shMotor);
+
+            // J2 (Shoulder Hinge)
+            p.j2 = new THREE.Group();
+            p.j2.position.set(0, 0.2, 0);
+            p.j1.add(p.j2);
+
+            // Link 2 (Upper Arm) - Modeled with offset
+            const armLen = 0.6;
+            const armGeo = createChamferBox(0.12, armLen, 0.12, MAT.orangePaint);
+            armGeo.position.y = armLen / 2;
+            p.j2.add(armGeo);
+
+            // Deco lines
+            const deco = createChamferBox(0.13, 0.4, 0.05, MAT.darkMetal);
+            deco.position.y = armLen / 2;
+            deco.position.x = 0.065; // Side
+            p.j2.add(deco);
+
+            // J3 (Elbow)
+            p.j3 = new THREE.Group();
+            p.j3.position.y = armLen;
+            p.j2.add(p.j3);
+
+            // Elbow Visual
+            const elbMotor = createCylinder(0.09, 0.09, 0.22, MAT.darkMetal);
+            elbMotor.rotation.z = Math.PI / 2;
+            p.j3.add(elbMotor);
+
+            // Link 3 (Forearm)
+            // Forearm typically rotates along its axis, but J4 is the rotation.
+            // Structural part:
+            const foreArmLen = 0.5;
+            // Slightly tapered
+            const faGeo = createCylinder(0.06, 0.05, foreArmLen, MAT.orangePaint);
+            faGeo.position.y = foreArmLen / 2;
+            p.j3.add(faGeo);
+
+            // J4 (Wrist 1 - Forearm Roll) - Located at end of forearm structure
+            p.j4 = new THREE.Group();
+            p.j4.position.y = foreArmLen;
+            p.j3.add(p.j4);
+
+            // J5 (Wrist 2 - Bend)
+            p.j5 = new THREE.Group();
+            p.j5.position.y = 0; // At same point as J4 end conceptually, but physically connected
+            p.j4.add(p.j5);
+
+            // Wrist joint visual
+            const wristMotor = createChamferBox(0.1, 0.12, 0.1, MAT.darkMetal);
+            p.j5.add(wristMotor);
+
+            // J6 (Wrist 3 - Flange Rotate)
+            p.j6 = new THREE.Group();
+            p.j6.position.y = 0.08;
+            p.j5.add(p.j6);
+
+            // Flange (Visual base)
+            const flange = createCylinder(0.05, 0.05, 0.02, MAT.chrome);
+            p.j6.add(flange);
+
+            // 2-Finger Gripper (To visualize rotation)
+            const gripperBase = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.04), MAT.darkMetal);
+            gripperBase.position.y = 0.03;
+            gripperBase.castShadow = true;
+            p.j6.add(gripperBase);
+
+            // Fingers
+            const fingerGeo = new THREE.BoxGeometry(0.02, 0.08, 0.04);
+            const finger1 = new THREE.Mesh(fingerGeo, MAT.orangePaint);
+            finger1.position.set(0.04, 0.08, 0);
+            finger1.castShadow = true;
+            p.j6.add(finger1);
+
+            const finger2 = new THREE.Mesh(fingerGeo, MAT.orangePaint);
+            finger2.position.set(-0.04, 0.08, 0);
+            finger2.castShadow = true;
+            p.j6.add(finger2);
+        }
+
+
+        // --- 2. SCARA Robot (High Speed) ---
+        function buildScara(parent) {
+            const p = robotParts;
+
+            // 1. High Base / Pedestal (Fix clipping)
+            // SCARA needs specific height so Z-quill doesn't hit floor
+            const pedestalHeight = 0.6;
+            const pedestal = createCylinder(0.12, 0.15, pedestalHeight, MAT.darkMetal);
+            pedestal.position.y = pedestalHeight / 2;
+            parent.add(pedestal);
+
+            // J1 (Shoulder) - Rotates around Y
+            p.j1 = new THREE.Group();
+            p.j1.position.y = pedestalHeight;
+            parent.add(p.j1);
+
+            // Link 1
+            const searchL1 = 0.5;
+            const l1Geo = createChamferBox(0.12, 0.15, searchL1, MAT.orangePaint);
+            l1Geo.position.z = searchL1 / 2;
+            l1Geo.position.y = 0.075; // Sit on top of pedestal
+            p.j1.add(l1Geo);
+
+            // J2 (Elbow) - Rotates around Y
+            p.j2 = new THREE.Group();
+            p.j2.position.z = searchL1;
+            p.j1.add(p.j2);
+
+            // Joint Cap
+            const j2Cap = createCylinder(0.07, 0.07, 0.18, MAT.darkMetal);
+            j2Cap.position.y = 0.075;
+            p.j2.add(j2Cap);
+
+            // Link 2
+            const searchL2 = 0.4;
+            const l2Geo = createChamferBox(0.1, 0.12, searchL2, MAT.orangePaint);
+            l2Geo.position.z = searchL2 / 2;
+            l2Geo.position.y = 0.06;
+            p.j2.add(l2Geo);
+
+            // J3 & J4 End Effector Mount
+            // SCARA usually has the quill at the end
+            const quillHousing = createCylinder(0.06, 0.06, 0.2, MAT.darkMetal);
+            quillHousing.position.z = searchL2;
+            quillHousing.position.y = 0.06;
+            p.j2.add(quillHousing);
+
+            // J3: Linear Z (The Quill)
+            p.j3 = new THREE.Group();
+            p.j3.position.z = searchL2;
+            p.j3.position.y = 0.06; // Center of housing
+            p.j2.add(p.j3);
+
+            // The visible rod that moves up/down
+            // Note: In SCARA, '0' extension usually means retracted up. 
+            // We define J3 val as 'extension down'.
+            const rodLen = 0.5;
+            const rod = createCylinder(0.02, 0.02, rodLen, MAT.chrome);
+            // Default position (retracted): Center of rod is aligned such that bottom is just exposing.
+            // When J3 increases, rod moves DOWN.
+            // Center of rod needs to be high initially.
+            rod.position.y = rodLen / 2;
+            p.j3.add(rod);
+
+            // J4: Rotation of the rod
+            p.j4 = new THREE.Group();
+            // Attach to bottom of rod
+            p.j4.position.y = -rodLen / 2;
+            rod.add(p.j4);
+
+            // Visual Flange Plate (Rectangular so rotation is visible)
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.04), MAT.darkMetal);
+            plate.position.y = -0.01;
+            plate.castShadow = true;
+            p.j4.add(plate);
+
+            // Uniform Gripper Fingers
+            const fingerGeo = new THREE.BoxGeometry(0.015, 0.06, 0.02);
+
+            const finger1 = new THREE.Mesh(fingerGeo, MAT.orangePaint);
+            finger1.position.set(0.025, -0.04, 0);
+            finger1.castShadow = true;
+            p.j4.add(finger1);
+
+            const finger2 = new THREE.Mesh(fingerGeo, MAT.orangePaint);
+            finger2.position.set(-0.025, -0.04, 0);
+            finger2.castShadow = true;
+            p.j4.add(finger2);
+        }
+
+        // --- 3. Cartesian Gantry (Industrial) ---
+        function buildCartesian(parent) {
+            const p = robotParts;
+            const lim = { x: 1.2, y: 1.2, zHeight: 1.0 }; // Frame dim
+
+            // Frame Construction
+            const frame = new THREE.Group();
+            parent.add(frame);
+
+            // 4 Pillars
+            const legH = lim.zHeight;
+            const legGeo = new THREE.BoxGeometry(0.08, legH, 0.08);
+            const legsPos = [
+                [0, 0], [lim.x, 0], [0, lim.y], [lim.x, lim.y]
+            ];
+            legsPos.forEach(pos => {
+                const leg = new THREE.Mesh(legGeo, MAT.aluProfile);
+                leg.position.set(pos[0], legH / 2, pos[1]);
+                leg.castShadow = true;
+                leg.receiveShadow = true;
+                frame.add(leg);
+            });
+            // Center robot on origin
+            frame.position.set(-lim.x / 2, 0, -lim.y / 2);
+
+            // Top Rails (Y-Running)
+            const railYGeo = new THREE.BoxGeometry(0.1, 0.05, lim.y + 0.15);
+            [0, lim.x].forEach(x => {
+                const r = new THREE.Mesh(railYGeo, MAT.darkMetal);
+                r.position.set(x, legH, lim.y / 2);
+                r.castShadow = true;
+                frame.add(r);
+            });
+
+            // --- C1: X-Axis Bridge (Moves along Y rails? Wait, standard naming) ---
+            // Typically: X moves bridge, Y moves on bridge, Z moves down.
+            // Let's assume C1 moves the BRIDGE along the fixed rails (let's call fixed rails 'X' for simplicity or 'Y')
+            // Using logic: Fixed rails are spacing Y. Bridge spans X. Bridge moves along Y? 
+            // Let's stick to the visualizer names: C1(X), C2(Y).
+            // Let's say C1 moves the bridge along the X-axis (so fixed rails are parallel to X).
+
+            // Re-setup Frame: Two rails along X axis.
+            frame.children = []; // Clear previous logic for clarity
+
+            // New Plan: 2 Rails along X.
+            const railXLength = lim.x + 0.2;
+            const railXGeo = new THREE.BoxGeometry(railXLength, 0.1, 0.1);
+
+            // Front Rail
+            const r1 = new THREE.Mesh(railXGeo, MAT.aluProfile);
+            r1.position.set(lim.x / 2, legH, 0);
+            frame.add(r1);
+            // Back Rail
+            const r2 = new THREE.Mesh(railXGeo, MAT.aluProfile);
+            r2.position.set(lim.x / 2, legH, lim.y);
+            frame.add(r2);
+
+            // Legs
+            const lGeo = new THREE.BoxGeometry(0.1, legH, 0.1);
+            [[0, 0], [lim.x, 0], [0, lim.y], [lim.x, lim.y]].forEach(pos => {
+                const l = new THREE.Mesh(lGeo, MAT.darkMetal);
+                l.position.set(pos[0], legH / 2, pos[1]);
+                frame.add(l);
+            });
+
+            // C1 Group: The Bridge (Moves along X)
+            // Wait, if rails are along X, the Bridge allows movement ALONG X? 
+            // No, usually Bridge spans Y, and moves along X.
+            // Visualizer Config says: C1 = X-Gantry.
+            // So we move the whole Bridge structure along the X rails.
+            p.c1 = new THREE.Group(); // The Bridge
+            p.c1.position.set(0, legH + 0.05, 0); // Start Y height
+            frame.add(p.c1);
+
+            // Bridge Beam (Spanning Y)
+            const bridgeGeo = new THREE.BoxGeometry(0.2, 0.1, lim.y + 0.2);
+            const bridge = new THREE.Mesh(bridgeGeo, MAT.orangePaint);
+            bridge.position.z = lim.y / 2; // Center of span
+            p.c1.add(bridge);
+
+            // C2 Group: The Carriage (Moves along Y, on the bridge)
+            p.c2 = new THREE.Group();
+            p.c2.position.z = 0; // Relative to bridge start
+            p.c1.add(p.c2);
+
+            const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.25), MAT.darkMetal);
+            carriage.position.y = 0.05; // On top/surrounding beam
+            carriage.position.z = 0;
+            p.c2.add(carriage);
+
+            // C3 Group: Z-Axis (Vertical Slide)
+            p.c3 = new THREE.Group();
+            p.c3.position.y = 0; // Center of carriage
+            p.c2.add(p.c3);
+
+            // The Z-Rail / Shaft
+            const zRail = createChamferBox(0.08, 0.6, 0.08, MAT.chrome);
+            // Default: Retracted up.
+            // We want it to slide DOWN.
+            p.c3.add(zRail);
+
+            // End Effector
+            const ee = createCylinder(0.02, 0.0, 0.1, MAT.orangePaint);
+            ee.position.y = -0.35; // Bottom of zRail
+            p.c3.add(ee);
+        }
+
+        // --- 4. Delta Robot (Parallel) ---
+        function buildDelta(parent) {
+            const p = robotParts;
+            const H_BASE = 1.2; // Height of base plate
+
+            // 1. Triangular Top Frame
+            // Reference shows a triangle of black beams.
+            const frameGroup = new THREE.Group();
+            frameGroup.position.y = H_BASE;
+            parent.add(frameGroup);
+
+            // 3 Beams forming an equilateral triangle
+            // Center to vertex distance roughly 0.3?
+            const R_FRAME = 0.35;
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * 120) * (Math.PI / 180);
+                const nextAngle = ((i + 1) * 120) * (Math.PI / 180);
+
+                const p1 = new THREE.Vector3(R_FRAME * Math.cos(angle), 0, R_FRAME * Math.sin(angle));
+                const p2 = new THREE.Vector3(R_FRAME * Math.cos(nextAngle), 0, R_FRAME * Math.sin(nextAngle));
+
+                const center = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+                const dist = p1.distanceTo(p2);
+
+                const beam = createChamferBox(0.06, 0.04, dist + 0.1, MAT.jointCover); // Slightly longer for overlap
+                beam.position.copy(center);
+                beam.lookAt(p2);
+                frameGroup.add(beam);
+            }
+
+            p.baseHeight = H_BASE; // Store for IK
+            p.arms = [];
+
+            // 2. Arms (3x at 0, 120, 240 deg)
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * 120) * (Math.PI / 180);
+                const R_BASE = 0.25; // Motor pivot radius (approx near beam center)
+
+                // Motor Housing (Box style on side of frame)
+                // Positioned at vertex or midway? Reference: Motors at vertices usually, or side.
+                // Image shows motors at roughly the vertex points? Or on the sides.
+                // Let's put motors at the 'angle' directions (Vertices of our logic).
+
+                const armGroup = new THREE.Group();
+                armGroup.position.set(R_FRAME * Math.cos(angle), H_BASE, R_FRAME * Math.sin(angle));
+                // Fix: Rotate so Local Z points Radially Outwards (along Angle)
+                // Ry(theta) * Z(0,0,1) = (sin, 0, cos). We want (cos a, 0, sin a).
+                // theta = pi/2 - a.
+                armGroup.rotation.y = Math.PI / 2 - angle;
+                parent.add(armGroup);
+
+                // Visual Motor Block
+                const motorBox = createChamferBox(0.12, 0.1, 0.2, MAT.jointCover);
+                motorBox.position.set(0, 0, 0);
+                // Rotate to be tangent (perpendicular to radial arm)
+                motorBox.rotation.y = -Math.PI / 2;
+                armGroup.add(motorBox);
+
+                // --- Bicep (Upper Arm) ---
+                const bicepLen = 0.45;
+                const bicep = new THREE.Group();
+                armGroup.add(bicep);
+
+                // Visual Arm Structure (Dark Metal pair of plates or box)
+                const armMesh = createChamferBox(0.1, 0.03, bicepLen, MAT.jointCover);
+                armMesh.position.z = bicepLen / 2;
+                bicep.add(armMesh);
+
+                // Elbow Joint (Visual Axis)
+                const elbow = createCylinder(0.02, 0.02, 0.14, MAT.chrome);
+                elbow.rotation.z = Math.PI / 2;
+                elbow.position.z = bicepLen;
+                bicep.add(elbow);
+
+                // --- Forearm (Thin Parallelogram Rods) ---
+                const forearmLen = 0.9;
+
+                const rodGroup = new THREE.Group();
+                parent.add(rodGroup);
+
+                const rodGeo = new THREE.CylinderGeometry(0.008, 0.008, forearmLen, 8);
+                const rod1 = new THREE.Mesh(rodGeo, MAT.chrome);
+                const rod2 = new THREE.Mesh(rodGeo, MAT.chrome);
+                rod1.position.x = -0.05; // Spacing wider
+                rod2.position.x = 0.05;
+                rod1.position.y = -forearmLen / 2;
+                rod2.position.y = -forearmLen / 2;
+
+                const rodPivot = new THREE.Group();
+                rodPivot.add(rod1);
+                rodPivot.add(rod2);
+                rodGroup.add(rodPivot);
+
+                // Save references for IK (Using R_FRAME now as pivot R roughly)
+                p.arms.push({
+                    id: i,
+                    angle: angle,
+                    bicep: bicep,
+                    rodGroup: rodGroup,
+                    rodPivot: rodPivot,
+                    params: { R: R_FRAME, L: bicepLen, l: forearmLen }
+                });
+            }
+
+            // 3. Platform (Triangular End Effector)
+            p.platform = new THREE.Group();
+            parent.add(p.platform);
+
+            // Thicker platform to accommodate side connections (Height increased to 0.03)
+            const platGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.03, 3); // Triangle
+            const plat = new THREE.Mesh(platGeo, MAT.jointCover);
+            plat.rotation.y = 0;
+            plat.position.y = -0.015; // Shift plate down (Underslung)
+            p.platform.add(plat);
+
+            // Add visual joints at the corners (Side Face)
+            const R_PLAT = 0.08;
+            const ROD_SPACING = 0.1; // Matches rod1/rod2 spacing (0.05 * 2)
+
+            for (let i = 0; i < 3; i++) {
+                const ang = i * 120 * Math.PI / 180;
+
+                // Center of the connection face for this arm
+                const cx = R_PLAT * Math.cos(ang);
+                const cz = R_PLAT * Math.sin(ang);
+
+                // Tangent vector for spacing (Left/Right connection points)
+                // Tangent is (-sin, cos)
+                const tx = -Math.sin(ang);
+                const tz = Math.cos(ang);
+
+                // Create two connection points on the side
+                // Point 1
+                const j1 = new THREE.Mesh(new THREE.SphereGeometry(0.012), MAT.chrome);
+                j1.position.set(
+                    cx + (ROD_SPACING / 2) * tx,
+                    0, // vertically centered
+                    cz + (ROD_SPACING / 2) * tz
+                );
+                p.platform.add(j1);
+
+                // Point 2
+                const j2 = new THREE.Mesh(new THREE.SphereGeometry(0.012), MAT.chrome);
+                j2.position.set(
+                    cx - (ROD_SPACING / 2) * tx,
+                    0,
+                    cz - (ROD_SPACING / 2) * tz
+                );
+                p.platform.add(j2);
+            }
+
+            // Tool (Suction Cup)
+            const stemLen = 0.05;
+            const cupStem = createCylinder(0.015, 0.015, stemLen, MAT.darkMetal);
+            cupStem.position.y = -0.03 - (stemLen / 2); // Start at plate bottom
+            p.platform.add(cupStem);
+
+            const cup = createCylinder(0.01, 0.04, 0.02, MAT.orangePaint);
+            cup.position.y = -0.03 - stemLen - 0.01; // Bottom of stem
+            p.platform.add(cup);
+        }
+
+        // --- 5. Cylindrical Robot (RPP) ---
+        function buildCylindrical(parent) {
+            const p = robotParts;
+
+            // Base
+            const base = createCylinder(0.25, 0.28, 0.1, MAT.darkMetal);
+            base.position.y = 0.05;
+            parent.add(base);
+
+            // J1: Vertical Column (Rotates)
+            p.j1 = new THREE.Group();
+            p.j1.position.y = 0.1;
+            base.add(p.j1);
+
+            // Tall Column
+            const colHeight = 1.6;
+            const column = createCylinder(0.12, 0.12, colHeight, MAT.darkMetal);
+            column.position.y = colHeight / 2;
+            p.j1.add(column);
+
+            // J2: Carriage (Moves Vertically on Column)
+            p.j2 = new THREE.Group();
+            p.j2.position.y = 0.2;
+            p.j1.add(p.j2);
+
+            // 1. Vertical Sleeve Block
+            const sleeve = createChamferBox(0.35, 0.4, 0.35, MAT.orangePaint);
+            p.j2.add(sleeve);
+
+            // 2. Horizontal Housing (Attached to side)
+            // Reference shows a long block that the arm slides through.
+            const housingLen = 0.5;
+            const housing = createChamferBox(housingLen, 0.2, 0.2, MAT.orangePaint);
+            // Offset so it sticks out from sleeve
+            const offset = 0.175 + (housingLen / 2) - 0.05; // Overlap slightly
+            housing.position.x = offset;
+            p.j2.add(housing);
+
+            // J3: Horizontal Arm (The Sliding Beam)
+            p.j3 = new THREE.Group();
+            // Origin of motion is center of Housing
+            p.j3.position.x = offset;
+            p.j2.add(p.j3);
+
+            // Arm Mesh
+            // It slides through the housing.
+            // Length needs to be sufficient.
+            const armLen = 1.2;
+            const arm = createChamferBox(armLen, 0.12, 0.12, MAT.aluProfile);
+            // Centered on Group (0,0,0).
+            // Visual check: If J3.x = offset, Arm is centered in housing.
+            // If val increases, Arm moves +X (extends out).
+            p.j3.add(arm);
+
+            // End Effector (Wrist/Tool)
+            const ee = new THREE.Group();
+            ee.position.x = armLen / 2; // At tip
+            arm.add(ee);
+
+            // Reference shows a downward 'wrist'
+            const wrist = createCylinder(0.05, 0.05, 0.1, MAT.darkMetal);
+            wrist.rotation.z = Math.PI / 2;
+            ee.add(wrist);
+
+            // Gripper Mechanism
+            const gMount = createChamferBox(0.04, 0.06, 0.04, MAT.darkMetal);
+            gMount.position.set(0.05, -0.05, 0); // Hanging down from horizontal wrist
+            ee.add(gMount);
+
+            const gBase = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.02, 0.1), MAT.darkMetal);
+            gBase.position.set(0.05, -0.09, 0);
+            ee.add(gBase);
+
+            const fingGeo = new THREE.BoxGeometry(0.01, 0.05, 0.02);
+            const fing1 = new THREE.Mesh(fingGeo, MAT.orangePaint);
+            fing1.position.set(0.05, -0.12, 0.035);
+            ee.add(fing1);
+
+            const fing2 = new THREE.Mesh(fingGeo, MAT.orangePaint);
+            fing2.position.set(0.05, -0.12, -0.035);
+            ee.add(fing2);
+        }
+
+        // --- 6. Polar/Spherical Robot (RRP) ---
+        function buildPolar(parent) {
+            const p = robotParts;
+
+            // Base Box
+            const base = createChamferBox(0.4, 0.2, 0.4, MAT.darkMetal);
+            base.position.y = 0.1;
+            parent.add(base);
+
+            // J1: Turret (Rotates around Y)
+            p.j1 = new THREE.Group();
+            p.j1.position.y = 0.1; // Sits flush on base (Base top is 0.1 relative to center)
+            base.add(p.j1);
+
+            const turret = createChamferBox(0.3, 0.4, 0.3, MAT.orangePaint);
+            turret.position.y = 0.2;
+            p.j1.add(turret);
+
+            // J2: Pivot Housing (Tilts around X)
+            // Pivot point is near top of turret
+            p.j2 = new THREE.Group();
+            p.j2.position.set(0, 0.3, 0.15); // Slightly forward or center?
+            // Let's put it on the front face
+            p.j2.position.set(0, 0.3, 0);
+            p.j1.add(p.j2);
+
+            // Visual Axle
+            const axle = createCylinder(0.05, 0.05, 0.35, MAT.darkMetal);
+            axle.rotation.z = Math.PI / 2;
+            p.j2.add(axle);
+
+            // Housing that holds the arm
+            // Extended length to keep arm inside (0.5 -> 1.2)
+            const housing = createChamferBox(0.2, 0.2, 1.2, MAT.jointCover);
+            // Shift housing forward so pivot is near the back
+            housing.position.z = 0.35;
+            p.j2.add(housing);
+
+            // J3: Telescoping Arm (Slides inside Housing)
+            p.j3 = new THREE.Group();
+            p.j3.position.z = 0;
+            p.j2.add(p.j3);
+
+            // Arm Boom
+            const armLen = 1.0;
+            const arm = createCylinder(0.08, 0.08, armLen, MAT.chrome); // Make it a tube
+            arm.rotation.x = Math.PI / 2; // Align along Z
+            // Initial pos: centered?
+            // If extension=0, we want it retracted.
+            // Let's push geometry so "tip" is barely sticking out.
+            arm.position.z = armLen / 2;
+            p.j3.add(arm);
+
+            // End Effector
+            const ee = createChamferBox(0.1, 0.1, 0.1, MAT.orangePaint);
+            ee.position.z = armLen + 0.05;
+            p.j3.add(ee);
+
+            const tool = createCylinder(0.01, 0.005, 0.1, MAT.darkMetal);
+            tool.rotation.x = Math.PI / 2;
+            tool.position.z = 0.1;
+            ee.add(tool);
+        }
+
+        // --- Update Pose ---
+
+        function updatePose() {
+            if (!robotRoot) return;
+            const deg = Math.PI / 180;
+            const p = robotParts;
+            const vals = currentJoints.map(j => j.val);
+
+            if (currentRobotType === 'articulated') {
+                p.j1.rotation.y = -vals[0] * deg;
+                p.j2.rotation.x = vals[1] * deg;
+                p.j3.rotation.x = vals[2] * deg;
+                p.j4.rotation.y = vals[3] * deg;
+                p.j5.rotation.x = vals[4] * deg;
+                p.j6.rotation.y = vals[5] * deg;
+            }
+            else if (currentRobotType === 'scara') {
+                p.j1.rotation.y = vals[0] * deg;
+                p.j2.rotation.y = vals[1] * deg;
+
+                // J3: Linear Z. Positive val = moves DOWN.
+                // We limited max val to 0.35 in config.
+                // Base pedestal is 0.6m high.
+                // Rod is 0.5m long.
+                // At val=0, rod center is y=0.25 (relative to mount). Bottom is at 0.
+                // Move down by 'val'.
+                p.j3.position.y = 0.06 - vals[2];
+
+                p.j4.rotation.y = vals[3] * deg;
+            }
+            else if (currentRobotType === 'delta') {
+                const x = vals[0];
+                const z = vals[1];
+                const y = vals[2]; // Target Height
+
+                // Move Platform
+                p.platform.position.set(x, y, z);
+
+                // Update Arms
+                const R_PLAT = 0.08; // Platform radius (approx connection point)
+
+                p.arms.forEach(arm => {
+                    // 1. Calculate Connection Points
+                    // P_Global: Platform Connection Point
+                    // Platform is at (x,y,z). Connection is offset by angle.
+                    const angle = arm.angle;
+                    const r_plat_x = R_PLAT * Math.cos(angle);
+                    const r_plat_z = R_PLAT * Math.sin(angle);
+
+                    const Px = x + r_plat_x;
+                    const Py = y;
+                    const Pz = z + r_plat_z;
+
+                    // M_Global: Motor Pivot Point
+                    // ArmGroup is at (R_BASE*cos, H_BASE, R_BASE*sin).
+                    // We need to solve for Bicep Angle (theta).
+                    // Project P into the Arm's vertical plane.
+                    // Arm is rotated by -angle about Y.
+                    // Local Coords relative to Motor, aligned with Arm:
+                    //   Local X axis = Arm Pivot Vector (Sideways)
+                    //   Local Z axis = Radial Vector (Outwards)
+                    //   Local Y axis = Up.
+                    // Wait, in buildDelta, armGroup rotY = -angle.
+                    // So ArmGroup Local Z points roughly same dir as Global Rotated Vector?
+                    // Let's do analytic projection purely:
+
+                    // Transform P to "Arm Frame": 
+                    // Origin at Motor (Mx, My, Mz).
+                    // Rotate about Y by 'angle'.
+                    // New Z is Radial distance?
+
+                    const Mx = arm.params.R * Math.cos(angle);
+                    const Mz = arm.params.R * Math.sin(angle);
+                    const My = p.baseHeight;
+
+                    // Vector M->P
+                    const dx = Px - Mx;
+                    const dy = Py - My;
+                    const dz = Pz - Mz;
+
+                    // Project onto Radial vertical plane of the arm.
+                    // Radial vector: (cos(angle), 0, sin(angle)).
+                    const d_radial = dx * Math.cos(angle) + dz * Math.sin(angle);
+                    // Lateral vector distance (offset from plane):
+                    const d_lateral = -dx * Math.sin(angle) + dz * Math.cos(angle); // Cross product Y-component essentially
+
+                    // Now we have a 2D problem in the plane (Radial, Y).
+                    // Bicep length L, Forearm length l.
+                    // Origin (0,0) is Motor. Target is (d_radial, dy).
+                    // We must account for lateral offset reducing effective forearm reach.
+                    // Effective forearm length l_eff = sqrt(l^2 - d_lateral^2).
+
+                    let theta = 0;
+                    const L = arm.params.L;
+                    const l = arm.params.l;
+
+                    if (Math.abs(d_lateral) > l) {
+                        // Unreachable laterally
+                        theta = Math.PI / 4; // Error pose
+                    } else {
+                        const l_eff = Math.sqrt(l * l - d_lateral * d_lateral);
+
+                        // Circle Intersection: 
+                        // Circle 1 (Bicep): Center (0,0), radius L.
+                        // Circle 2 (Forearm): Center (d_radial, dy), radius l_eff.
+                        // Find intersection. 
+                        // Simplified: distance to target D_t = sqrt(dr^2 + dy^2).
+                        const dr = d_radial;
+                        const D_t_sq = dr * dr + dy * dy;
+                        const D_t = Math.sqrt(D_t_sq);
+
+                        if (D_t > L + l_eff || D_t < Math.abs(L - l_eff)) {
+                            // Unreachable
+                            theta = 0;
+                        } else {
+                            // Law of Cosines to find angle offsets.
+                            // Angle of vector to target: atan2(dy, dr).
+                            const alpha_t = Math.atan2(dy, dr);
+
+                            // Angle inside logic triangle (Sides L, l_eff, D_t).
+                            // We want angle at Motor (corresponding to L).
+                            // cos(gamma) = (L^2 + D_t^2 - l_eff^2) / (2 * L * D_t)
+                            const cos_gamma = (L * L + D_t_sq - l_eff * l_eff) / (2 * L * D_t);
+                            const gamma = Math.acos(Math.min(Math.max(cos_gamma, -1), 1));
+
+                            // Two solutions: alpha_t + gamma (Knee In) or alpha_t - gamma (Knee Out/Up).
+                            // Delta robots usually 'Knee Out'.
+                            // In our setup, dy is negative (target below). alpha_t is roughly -90.
+                            // gamma is positive.
+                            // alpha_t - gamma -> more negative (elbow goes UP logic? No, elbow goes higher relative to line).
+                            // Let's try alpha_t + gamma.
+                            theta = alpha_t + gamma;
+                            // Note: We use -theta for the Three.js rotation if axes differ.
+                        }
+                    }
+
+                    // Apply to Bicep
+                    // In three.js build: bicep is child of armGroup(RotY).
+                    // bicep geometry along Z.
+                    // We want to rotate Bicep around X-axis (horizontal).
+                    // A positive rotation around X dips it down?
+                    // Right hand rule on X (Right): Fingers curl Y->Z. Positive rotation moves Z up/back?
+                    // Let's just set it and invert if needed.
+                    // Current math: theta = 0 is horizontal (along dr). -90 is down.
+                    // If bicep mesh is along +Z. RotX(theta).
+                    // y' = z*sin(-theta)? 
+                    // Check coords: RotX: y = y*c - z*s. z = y*s + z*c.
+                    // Initial arm: (0, 0, L). (Along Z).
+                    // RotX(q). End: (0, -L*sin(q), L*cos(q)).
+                    // Our math: End: (L*cos(th), L*sin(th)) in (dr, dy).
+                    // Mapping: dr -> Z_local. dy -> Y_local.
+                    // So we want Y_local = L*sin(th). 
+                    // -L*sin(q) = L*sin(th). => sin(q) = -sin(th) => q = -th.
+                    // Also check Z: L*cos(q) = L*cos(th). Matches.
+                    // So RotX should be -theta.
+
+                    arm.bicep.rotation.x = -theta;
+                    arm.bicep.updateMatrixWorld(); // Ensure matrix is fresh for calculation
+
+                    // POSITION THE FOREARM (Rod)
+                    // Calculate Elbow World Pos explicitly to avoid matrixWorld update lag
+                    // Local Elbow in armGroup (Rotated X by -theta):
+                    // Bicep geometry is along +Z. RotX(-theta).
+                    // y = -L * sin(-theta) = L * sin(theta)
+                    // z = L * cos(-theta) = L * cos(theta)
+                    const localElbow = new THREE.Vector3(0, arm.params.L * Math.sin(theta), arm.params.L * Math.cos(theta));
+
+                    // Rotate to World (ArmGroup RotY = pi/2 - armAngle)
+                    const armAngle = arm.angle;
+                    // Rotation matrix for Y-axis rotation of (pi/2 - a)
+                    // x' = x*cos - z*sin
+                    // z' = x*sin + z*cos
+                    // Let ry = pi/2 - armAngle
+                    const ry = Math.PI / 2 - armAngle;
+                    const ca = Math.cos(ry);
+                    const sa = Math.sin(ry);
+                    const worldXLoc = localElbow.x * ca + localElbow.z * sa;
+                    const worldZLoc = -localElbow.x * sa + localElbow.z * ca;
+
+                    // Add Base Position
+                    // Motor/ArmGroup Pos: R_FRAME * (cos(ang), H_BASE, sin(ang))
+                    const R_FRAME = arm.params.R;
+                    const H_BASE = p.baseHeight || 1.2; // Fallback if undefined, but should be stored
+                    const motorX = R_FRAME * Math.cos(armAngle);
+                    const motorZ = R_FRAME * Math.sin(armAngle);
+
+                    const elbowPos = new THREE.Vector3(
+                        motorX + worldXLoc,
+                        H_BASE + localElbow.y,
+                        motorZ + worldZLoc
+                    );
+
+                    // Target is joint sphere on SIDE of platform (Center of rod pair)
+                    // P_Global was (Px, Py, Pz) - which is at height 'y'.
+                    // Our visuals are at y=0 local (so global 'y').
+                    const platPt = new THREE.Vector3(Px, Py, Pz);
+
+                    // Orient Rod Group
+                    arm.rodGroup.position.copy(elbowPos);
+                    arm.rodGroup.lookAt(platPt);
+
+                    // Scale/Stretch? 
+                    // The distance should match 'l' exactly if IK is perfect.
+                    // But 'l' implies center-to-center. 
+                    // Visual rod length 'l' is fixed. 
+                    // We just point it. 
+                    // Since d_lateral > 0, the rod will angle sideways too correctly by lookAt.
+
+                    // Adjust rodPivot to span the distance
+                    // lookAt orients +Z to target. 
+                    // Our Cylinder is Y-aligned (starts at 0, extends -Y).
+                    // We need -Y axis to satisfy +Z axis.
+                    // Rot -90 X: Y -> Z. Z -> -Y. No. 
+                    // Rot -90 X: (0, -1, 0) -> (0, 0, 1). This aligns -Y vector to +Z axis.
+                    arm.rodPivot.rotation.x = -Math.PI / 2;
+
+                    // Optional: Check distance for debug
+                    // const dist = elbowPos.distanceTo(platPt);
+                    // console.log(dist); // Should be roughly arm.params.l
+
+                });
+
+            }
+            else if (currentRobotType === 'cartesian') {
+                // C1 (X): Move bridge along X rail
+                // Range 0 to 1.0 m.
+                // Visual Mesh X range is 0 to 1.2
+                p.c1.position.x = vals[0];
+                p.c2.position.z = vals[1]; // Y-Carriage (Z local)
+                p.c3.position.y = 0.2 - vals[2]; // Z-Slide (Vertical)
+            }
+            else if (currentRobotType === 'cylindrical') {
+                // J1: Theta (Y Rotation)
+                p.j1.rotation.y = -vals[0] * deg; // Standard CCW
+
+                // J2: Height (Y Linear)
+                // Range 0 to 0.6. Initial 0.2.
+                p.j2.position.y = 0.2 + vals[1];
+
+                // J3: Radius (X Linear Extension)
+                // Range 0 to 0.6.
+                // Move arm group OUT along local X
+                // Housing Offset approx 0.375 (0.175 + 0.25 - 0.05).
+                // Let's settle on the visual center: 0.38
+                p.j3.position.x = 0.38 + vals[2];
+
+            }
+            else if (currentRobotType === 'polar') {
+                // J1: Theta (Y Rotation)
+                p.j1.rotation.y = -vals[0] * deg;
+
+                // J2: Pitch (X Rotation)
+                // Val is -30 to 90.
+                p.j2.rotation.x = -vals[1] * deg; // Negative to pitch up properly with standard coord
+
+                // J3: Extension (Z Linear local)
+                // Range 0 to 0.6
+                // Housing is along Z. Arm slides out Z.
+                p.j3.position.z = vals[2];
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+
+        // Failsafe
+        setTimeout(() => {
+            const l = document.getElementById('loader');
+            if (l && l.style.opacity !== '0') {
+                console.warn("Forcing loader remove due to timeout");
+                l.style.opacity = '0';
+                setTimeout(() => l.remove(), 500);
+            }
+        }, 5000);
+
+        // Fullscreen toggle
+        function toggleFullscreen() {
+            const el = document.documentElement;
+            const label = document.getElementById('fs-label');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const label = document.getElementById('fs-label');
+            label.textContent = document.fullscreenElement ? 'Exit' : 'Fullscreen';
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            const label = document.getElementById('fs-label');
+            label.textContent = document.webkitFullscreenElement ? 'Exit' : 'Fullscreen';
+        });
+
+    </script>
+</body>
+
+</html>

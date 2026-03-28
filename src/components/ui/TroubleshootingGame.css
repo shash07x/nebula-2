@@ -1,0 +1,41 @@
+.ts-game { background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); overflow: hidden; }
+.ts-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid var(--border-subtle); gap: 16px; flex-wrap: wrap; }
+.ts-header-left { display: flex; gap: 12px; align-items: flex-start; flex: 1; }
+.ts-alert-icon { color: #f59e0b; flex-shrink: 0; margin-top: 2px; }
+.ts-header h3 { margin: 0; font-size: 1rem; }
+.ts-description { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-secondary); }
+.ts-stats { display: flex; gap: 14px; flex-shrink: 0; }
+.ts-stat { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 100px; }
+
+/* Branches */
+.ts-branches { padding: 24px; }
+.ts-instruction { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px; }
+.ts-branch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.ts-branch-card { display: flex; align-items: center; gap: 10px; padding: 16px 18px; background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 12px; cursor: pointer; transition: all 0.2s; text-align: left; }
+.ts-branch-card:hover { border-color: var(--accent-blue); box-shadow: 0 4px 16px rgba(59,109,224,0.08); }
+.ts-branch-icon { font-size: 1.4rem; }
+.ts-branch-label { flex: 1; font-weight: 600; font-size: 0.85rem; }
+.ts-branch-arrow { color: var(--text-muted); }
+
+/* Investigation */
+.ts-investigation { padding: 24px; }
+.ts-back-btn { font-size: 0.75rem; color: var(--accent-blue); background: none; border: none; cursor: pointer; margin-bottom: 12px; padding: 0; }
+.ts-branch-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+.ts-check-card { background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; }
+.ts-check-question { font-size: 0.9rem; font-weight: 500; margin-bottom: 14px; }
+.ts-investigate-btn { padding: 8px 18px; border-radius: 8px; background: var(--gradient-primary); color: #fff; font-weight: 600; font-size: 0.78rem; border: none; cursor: pointer; transition: box-shadow 0.2s; }
+.ts-investigate-btn:hover { box-shadow: 0 4px 12px rgba(59,109,224,0.3); }
+.ts-check-answer { margin-top: 14px; padding: 14px; background: rgba(0,230,118,0.06); border-radius: 10px; border: 1px solid rgba(0,230,118,0.15); font-size: 0.82rem; }
+.ts-check-answer.root-cause { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
+.ts-root-cause-badge { margin-top: 10px; padding: 10px; background: rgba(245,158,11,0.1); border-radius: 8px; font-size: 0.78rem; font-weight: 500; color: #b45309; }
+.ts-next-check { display: block; margin-top: 14px; padding: 8px 16px; border-radius: 8px; background: rgba(0,0,0,0.04); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; margin-left: auto; }
+
+/* Result */
+.ts-result { padding: 40px 24px; text-align: center; }
+.ts-result-icon { color: var(--accent-green); margin-bottom: 12px; }
+.ts-result h3 { margin: 0 0 20px; }
+.ts-result-stats { max-width: 320px; margin: 0 auto 24px; }
+.ts-result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.82rem; }
+.ts-result-row.highlight { border-bottom: none; padding-top: 12px; font-size: 0.9rem; color: var(--accent-blue); }
+.ts-reset-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; background: var(--gradient-primary); color: #fff; font-weight: 600; border: none; cursor: pointer; }
+.ts-finish-btn { display: block; margin: 20px auto 0; padding: 12px 28px; border-radius: 10px; background: var(--gradient-primary); color: #fff; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; }

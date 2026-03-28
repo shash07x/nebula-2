@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula - Real World Roadmap Demo</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border-subtle: #e2e8f0;
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent-blue: #2563eb;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --font-heading: 'Inter', -apple-system, sans-serif;
+            --font-body: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 0 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Scenarios Context */
+        .context-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .context-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .context-content h2 {
+            margin: 0 0 8px;
+            font-size: 1.2rem;
+        }
+        
+        .context-content p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Roadmap Container */
+        .roadmap-container {
+            position: relative;
+            padding: 40px 0;
+            flex: 1;
+        }
+
+        /* Path Line */
+        .roadmap-path {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: calc(100% - 120px);
+            background: var(--border-subtle);
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .roadmap-path-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0%; /* JS will update this */
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-cyan));
+            border-radius: 2px;
+            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Nodes */
+        .roadmap-nodes {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .node-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            opacity: 0.5;
+            transition: all 0.4s ease;
+            pointer-events: none;
+        }
+
+        .node-wrapper.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .node-wrapper.completed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Zig Zag Layout */
+        .node-wrapper:nth-child(odd) .node-content {
+            margin-right: calc(50% + 60px);
+            text-align: right;
+            transform-origin: right center;
+        }
+        .node-wrapper:nth-child(even) .node-content {
+            margin-left: calc(50% + 60px);
+            text-align: left;
+            transform-origin: left center;
+        }
+
+        /* The Circle */
+        .node-circle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 4px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--text-muted);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+        }
+
+        .node-wrapper.active .node-circle {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.15);
+            transform: translateX(-50%) scale(1.1);
+        }
+
+        .node-wrapper.completed .node-circle {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* The Content Card */
+        .node-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.4s ease;
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+
+        .node-wrapper.active .node-content {
+            opacity: 1;
+            transform: scale(1);
+            border-color: var(--accent-blue);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.1);
+        }
+
+        .node-wrapper.completed .node-content {
+            opacity: 1;
+            transform: scale(1);
+            border-color: var(--accent-green);
+        }
+
+        .node-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .node-wrapper.completed .node-tag { color: var(--accent-green); }
+
+        .node-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0 0 16px;
+            color: var(--text-main);
+        }
+
+        /* Options */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            padding: 12px 16px;
+            text-align: left;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .option-btn.correct {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .option-btn.incorrect {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            color: #b91c1c;
+        }
+        
+        .option-btn:disabled {
+            cursor: default;
+        }
+        
+        .feedback {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            text-align: left;
+        }
+        
+        .feedback.show { display: block; }
+        .feedback.success { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .feedback.error { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+
+        /* Completion Modal */
+        .completion-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .completion-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            max-width: 480px;
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .completion-modal.show .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-green), #34d399);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0 auto 24px;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: transform 0.2s;
+        }
+        .modal-btn:hover { transform: translateY(-2px); }
+
+        @media (max-width: 768px) {
+            .roadmap-path { left: 40px; transform: none; }
+            .node-circle { left: 40px; transform: translateX(-50%); }
+            .node-wrapper.active .node-circle,
+            .node-wrapper.completed .node-circle { transform: translateX(-50%) scale(1); }
+            .node-wrapper:nth-child(odd) .node-content,
+            .node-wrapper:nth-child(even) .node-content {
+                margin-left: 80px;
+                margin-right: 0;
+                text-align: left;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Real-World Case Study</h1>
+        <p>Apply your knowledge to solve a sequential automation problem. Complete each milestone to progress along the roadmap.</p>
+    </header>
+
+    <div class="context-card">
+        <div class="context-icon">
+            <i data-lucide="factory"></i>
+        </div>
+        <div class="context-content">
+            <h2>Scenario: Automotive Assembly Line Upgrade</h2>
+            <p>You are the Lead Systems Integrator at Apex Motors. Management wants to replace a manual welding station with an automated robotic cell to increase throughput by 30%. You must make critical decisions at each phase of the integration roadmap.</p>
+        </div>
+    </div>
+
+    <div class="roadmap-container">
+        <!-- Progress Line -->
+        <div class="roadmap-path">
+            <div class="roadmap-path-fill" id="pathFill"></div>
+        </div>
+
+        <div class="roadmap-nodes" id="nodesContainer">
+            <!-- Nodes will be injected here via JS -->
+        </div>
+    </div>
+</div>
+
+<div class="completion-modal" id="completionModal">
+    <div class="modal-card">
+        <div class="modal-icon">
+            <i data-lucide="check-circle" style="width: 40px; height: 40px;"></i>
+        </div>
+        <h2>Case Study Completed!</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 24px;">Excellent work! You successfully guided the automated welding cell integration from planning safely to deployment.</p>
+        <button class="modal-btn" onclick="location.reload()">Return to Module</button>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    const questions = [
+        {
+            milestone: "Phase 1: Planning",
+            title: "Selecting the Right Robot Architecture",
+            options: [
+                { text: "SCARA Robot", isCorrect: false },
+                { text: "6-Axis Articulated Robot", isCorrect: true },
+                { text: "Delta Robot", isCorrect: false }
+            ],
+            feedbackText: "Correct! A 6-axis articulated robot provides the necessary dexterity and reach required for complex automotive frame welding."
+        },
+        {
+            milestone: "Phase 2: Payload Analysis",
+            title: "Calculating the Total Tooling Payload",
+            options: [
+                { text: "Ignore the weight of the cables", isCorrect: false },
+                { text: "Add welding gun, cables, and safety factor", isCorrect: true },
+                { text: "Only calculate the welding gun weight", isCorrect: false }
+            ],
+            feedbackText: "Exactly. The total payload must include the end-effector (welding gun), all dress packs (cables/hoses), plus a dynamic safety margin."
+        },
+        {
+            milestone: "Phase 3: Safety Integration",
+            title: "Implementing Cell Defenses",
+            options: [
+                { text: "Laser scanners and light curtains", isCorrect: true },
+                { text: "A painted red line on the floor", isCorrect: false },
+                { text: "Warning signs only", isCorrect: false }
+            ],
+            feedbackText: "Spot on. Active safety devices like safety laser scanners and interlocked light curtains ensure the robot halts if a human enters the collaborative zone."
+        },
+        {
+            milestone: "Phase 4: Programming",
+            title: "Trajectory Optimization",
+            options: [
+                { text: "Program point-to-point without blending", isCorrect: false },
+                { text: "Use continuous path blending for smooth curves", isCorrect: true },
+                { text: "Maximize speed for every single motion", isCorrect: false }
+            ],
+            feedbackText: "Great! Continuous path blending prevents the robot from stopping at every intermediate point, reducing cycle time and mechanical wear."
+        }
+    ];
+
+    let currentNode = 0;
+    const container = document.getElementById('nodesContainer');
+    const pathFill = document.getElementById('pathFill');
+
+    function renderNodes() {
+        container.innerHTML = '';
+        
+        questions.forEach((q, index) => {
+            const isCompleted = index < currentNode;
+            const isActive = index === currentNode;
+            
+            let statusClass = '';
+            if (isCompleted) statusClass = 'completed';
+            else if (isActive) statusClass = 'active';
+
+            const nodeHtml = `
+                <div class="node-wrapper ${statusClass}" id="node-${index}">
+                    <div class="node-circle">
+                        ${isCompleted ? '<i data-lucide="check" style="width: 24px;"></i>' : index + 1}
+                    </div>
+                    <div class="node-content">
+                        <span class="node-tag">${q.milestone}</span>
+                        <h3 class="node-title">${q.title}</h3>
+                        <div class="options-list">
+                            ${q.options.map((opt, optIdx) => `
+                                <button class="option-btn" 
+                                    ${isCompleted ? 'disabled' : ''} 
+                                    ${isCompleted && opt.isCorrect ? 'style="border-color: #10b981; background: rgba(16, 185, 129, 0.1); color: #059669;"' : ''}
+                                    onclick="handleAnswer(${index}, ${optIdx})">
+                                    ${opt.text}
+                                    ${isCompleted && opt.isCorrect ? '<i data-lucide="check" style="width: 16px;"></i>' : ''}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="feedback ${isCompleted ? 'show success' : ''}" id="feedback-${index}">
+                            ${isCompleted ? q.feedbackText : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', nodeHtml);
+        });
+        
+        lucide.createIcons();
+        updatePath();
+        
+        // Scroll active into view
+        if (currentNode < questions.length) {
+            setTimeout(() => {
+                document.getElementById(`node-${currentNode}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+
+    function handleAnswer(qIndex, optIndex) {
+        if (qIndex !== currentNode) return;
+        
+        const question = questions[qIndex];
+        const isCorrect = question.options[optIndex].isCorrect;
+        const nodeDiv = document.getElementById(`node-${qIndex}`);
+        const btns = nodeDiv.querySelectorAll('.option-btn');
+        const feedback = document.getElementById(`feedback-${qIndex}`);
+        
+        // Disable all
+        btns.forEach(b => b.disabled = true);
+        
+        if (isCorrect) {
+            btns[optIndex].classList.add('correct');
+            btns[optIndex].innerHTML += ' <i data-lucide="check" style="width: 16px;"></i>';
+            feedback.textContent = question.feedbackText;
+            feedback.className = 'feedback show success';
+            lucide.createIcons();
+            
+            // Move to next step
+            setTimeout(() => {
+                currentNode++;
+                renderNodes();
+                
+                if (currentNode === questions.length) {
+                    setTimeout(() => {
+                        document.getElementById('completionModal').classList.add('show');
+                    }, 800);
+                }
+            }, 1500);
+        } else {
+            btns[optIndex].classList.add('incorrect');
+            btns[optIndex].innerHTML += ' <i data-lucide="x" style="width: 16px;"></i>';
+            feedback.textContent = "Incorrect. Please review the scenario details and try again.";
+            feedback.className = 'feedback show error';
+            lucide.createIcons();
+            
+            // Allow retry after delay
+            setTimeout(() => {
+                btns.forEach(b => {
+                    b.disabled = false;
+                    b.classList.remove('incorrect');
+                    // Remove the X icon we appended
+                    b.innerHTML = b.innerHTML.split(' <i')[0];
+                });
+                feedback.className = 'feedback';
+            }, 2000);
+        }
+    }
+
+    function updatePath() {
+        if (questions.length <= 1) return;
+        const progress = Math.min((currentNode / (questions.length - 1)) * 100, 100);
+        pathFill.style.height = `${progress}%`;
+    }
+
+    // Init
+    renderNodes();
+</script>
+</body>
+</html>

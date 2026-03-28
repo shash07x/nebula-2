@@ -1,0 +1,248 @@
+.badges-page {
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.bp-back {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  transition: color 0.2s;
+}
+.bp-back:hover { color: var(--text-primary); }
+
+.bp-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+.bp-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.bp-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+/* Robot Build Card */
+.bp-robot-card { padding: 1.5rem; }
+.bp-robot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.bp-robot-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+.bp-robot-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.bp-robot-content {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 1.5rem;
+}
+
+.bp-robot-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+.bp-robot-svg {
+  width: 130px;
+  height: 200px;
+}
+
+/* SVG parts styling */
+.bp-part {
+  cursor: pointer;
+  transition: all 0.3s;
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+}
+.bp-part.locked { fill: rgba(0, 0, 0, 0.12); opacity: 0.7; stroke: rgba(0, 0, 0, 0.3); }
+.bp-part.spark { fill: rgba(59, 109, 224, 0.35); stroke: var(--accent-blue); stroke-width: 2; }
+.bp-part.build { fill: rgba(124, 58, 237, 0.35); stroke: var(--accent-purple); stroke-width: 2; }
+.bp-part.master { fill: rgba(255, 109, 0, 0.35); stroke: var(--accent-orange); stroke-width: 2; }
+.bp-part:hover:not(.locked) { opacity: 1; filter: brightness(1.1); }
+.bp-part-line { transition: all 0.3s; }
+.bp-part-line.locked { stroke: rgba(0, 0, 0, 0.25); stroke-width: 2; opacity: 0.7; }
+.bp-part-line.build { stroke: var(--accent-purple); stroke-width: 2; opacity: 0.85; }
+
+.bp-legend {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.bp-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.bp-legend-dot.spark { background: var(--accent-blue); }
+.bp-legend-dot.build { background: var(--accent-purple); }
+.bp-legend-dot.master { background: var(--accent-orange); }
+
+/* Parts/Skills list */
+.bp-parts-list {
+  max-height: 420px;
+  overflow-y: auto;
+  min-width: 0;
+}
+.bp-parts-list h4 {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 0.6rem;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.bp-part-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  cursor: default;
+}
+.bp-part-item.locked {
+  opacity: 0.4;
+}
+.bp-part-item.highlighted {
+  background: rgba(59, 109, 224, 0.08);
+  border-left: 3px solid var(--accent-blue);
+}
+
+.bp-part-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.bp-part-dot.spark { background: var(--accent-blue); }
+.bp-part-dot.build { background: var(--accent-purple); }
+.bp-part-dot.master { background: var(--accent-orange); }
+
+.bp-part-info {
+  flex: 1;
+  min-width: 0;
+}
+.bp-part-name {
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bp-part-desc {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.bp-part-status {
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+.bp-part-status.unlocked {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.bp-skill-phase {
+  margin-bottom: 0.6rem;
+}
+.bp-phase-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  display: block;
+  padding: 0.3rem 0.6rem 0.15rem;
+}
+.bp-skill-check {
+  color: var(--accent-green);
+  flex-shrink: 0;
+}
+.bp-skill-lock {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Badges Section */
+.bp-badges-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+.bp-badges-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.3rem 0 1rem;
+}
+.bp-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Full Robot Build section (below badges) ── */
+.bp-full-robot-section {
+  margin-top: 2rem;
+}
+.bp-full-robot-card {
+  padding: 2rem;
+}
+.bp-full-robot-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+.bp-full-robot-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+.bp-full-robot-container {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .bp-layout { grid-template-columns: 1fr; }
+  .bp-robot-content { grid-template-columns: 1fr; }
+}

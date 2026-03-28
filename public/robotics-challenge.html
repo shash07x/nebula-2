@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robotics Interactive Challenge</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+:root {
+  --bg: #0a0f1a;
+  --panel: rgba(15,23,42,0.82);
+  --border: rgba(255,255,255,0.12);
+  --accent: #0ea5e9;
+  --green: #22c55e;
+  --red: #ef4444;
+  --gold: #f59e0b;
+  --text: #f1f5f9;
+  --muted: #64748b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; }
+#canvas-container { position:fixed; inset:0; z-index:0; }
+
+/* ── Top Bar ── */
+#top-bar {
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 20px;
+  background:var(--panel); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+#top-bar h1 { font-size:0.9rem; font-weight:700; letter-spacing:0.5px; }
+.level-btns { display:flex; gap:6px; }
+.level-btn {
+  padding:6px 14px; border:1px solid var(--border); border-radius:6px;
+  background:transparent; color:var(--text); font-size:0.7rem;
+  font-weight:600; cursor:pointer; transition:all 0.2s;
+  font-family:'Inter',sans-serif; text-transform:uppercase; letter-spacing:0.5px;
+}
+.level-btn:hover { background:rgba(14,165,233,0.15); }
+.level-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── Side Panel ── */
+#side-panel {
+  position:fixed; top:52px; right:12px; width:260px; z-index:15;
+  background:var(--panel); backdrop-filter:blur(16px);
+  border:1px solid var(--border); border-radius:10px;
+  padding:16px; max-height:calc(100vh - 100px); overflow-y:auto;
+}
+#side-panel::-webkit-scrollbar { width:4px; }
+#side-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+
+.panel-section { margin-bottom:14px; }
+.panel-label { font-size:0.6rem; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px; font-weight:600; }
+.panel-title { font-size:0.85rem; font-weight:700; margin-bottom:4px; }
+.panel-text { font-size:0.72rem; color:#cbd5e1; line-height:1.5; }
+
+/* Feedback */
+.feedback { padding:10px; border-radius:8px; font-size:0.72rem; font-weight:600; margin-top:8px; display:none; }
+.feedback.correct { background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:var(--green); display:block; }
+.feedback.wrong { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); display:block; }
+.feedback.info { background:rgba(14,165,233,0.15); border:1px solid rgba(14,165,233,0.3); color:var(--accent); display:block; }
+
+.next-btn {
+  width:100%; margin-top:10px; padding:8px; border:none; border-radius:6px;
+  background:var(--accent); color:#fff; font-weight:600; font-size:0.75rem;
+  cursor:pointer; transition:transform 0.2s; font-family:'Inter',sans-serif;
+}
+.next-btn:hover { transform:scale(1.02); }
+.next-btn:disabled { opacity:0.4; cursor:default; transform:none; }
+
+.submit-btn {
+  width:100%; margin-top:8px; padding:8px; border:none; border-radius:6px;
+  background:var(--green); color:#fff; font-weight:600; font-size:0.75rem;
+  cursor:pointer; font-family:'Inter',sans-serif;
+}
+
+/* ── Bottom Bar ── */
+#bottom-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 20px;
+  background:var(--panel); backdrop-filter:blur(16px);
+  border-top:1px solid var(--border); font-size:0.72rem;
+}
+.score-display { display:flex; gap:16px; }
+.score-item { display:flex; gap:4px; }
+.score-label { color:var(--muted); }
+.score-val { font-weight:700; color:var(--accent); }
+.progress-bar { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--accent); transition:width 0.4s ease; border-radius:2px; }
+
+/* ── Tooltip ── */
+#tooltip {
+  position:fixed; z-index:50; padding:8px 12px;
+  background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);
+  border:1px solid var(--border); border-radius:6px;
+  font-size:0.7rem; color:var(--text); pointer-events:none;
+  display:none; max-width:200px; line-height:1.4;
+}
+
+/* ── Fullscreen Button ── */
+#fs-btn {
+  position:fixed; bottom:44px; left:12px; z-index:20;
+  background:var(--panel); backdrop-filter:blur(12px);
+  border:1px solid var(--border); color:var(--text);
+  padding:6px 12px; border-radius:6px; cursor:pointer;
+  font-size:0.7rem; font-family:'Inter',sans-serif;
+  display:flex; align-items:center; gap:4px;
+}
+#fs-btn:hover { background:rgba(14,165,233,0.2); }
+
+/* ── Loader ── */
+#loader {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; justify-content:center; align-items:center; z-index:100;
+  transition:opacity 0.5s;
+}
+.spinner { width:32px; height:32px; border:3px solid rgba(255,255,255,0.1); border-radius:50%; border-top-color:var(--accent); animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Drag indicator ── */
+.drag-hint { position:fixed; top:56px; left:50%; transform:translateX(-50%); z-index:25;
+  background:var(--panel); backdrop-filter:blur(12px); border:1px solid var(--border);
+  padding:6px 16px; border-radius:20px; font-size:0.7rem; color:var(--gold);
+  display:none; font-weight:600;
+}
+
+/* Responsive */
+@media(max-width:768px) {
+  #side-panel { width:200px; right:6px; padding:10px; }
+  #top-bar h1 { font-size:0.75rem; }
+  .level-btn { padding:4px 10px; font-size:0.6rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spinner"></div></div>
+<div id="canvas-container"></div>
+<div id="tooltip"></div>
+<div class="drag-hint" id="drag-hint">🔧 Click & drag objects to arrange the robotic cell</div>
+
+<!-- Top Bar -->
+<div id="top-bar">
+  <h1>🤖 Robotics Interactive Challenge</h1>
+  <div class="level-btns">
+    <button class="level-btn active" onclick="quiz.setLevel(1)">Level 1 · Guided</button>
+    <button class="level-btn" onclick="quiz.setLevel(2)">Level 2 · Assisted</button>
+    <button class="level-btn" onclick="quiz.setLevel(3)">Level 3 · Independent</button>
+  </div>
+</div>
+
+<!-- Side Panel -->
+<div id="side-panel">
+  <div class="panel-section">
+    <div class="panel-label">Current Level</div>
+    <div class="panel-title" id="level-title">Level 1 — Guided</div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Task</div>
+    <div class="panel-text" id="question-text">Loading…</div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Instructions</div>
+    <div class="panel-text" id="instructions-text">Loading…</div>
+  </div>
+  <div id="feedback-area"></div>
+  <button class="next-btn" id="next-btn" onclick="quiz.nextQuestion()" disabled>Next Question →</button>
+</div>
+
+<!-- Bottom Bar -->
+<div id="bottom-bar">
+  <div class="score-display">
+    <div class="score-item"><span class="score-label">Score:</span><span class="score-val" id="score-val">0</span></div>
+    <div class="score-item"><span class="score-label">Questions:</span><span class="score-val" id="q-progress">0/0</span></div>
+    <div class="score-item"><span class="score-label">Attempts:</span><span class="score-val" id="attempts-val">0</span></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<!-- Fullscreen -->
+<button id="fs-btn" onclick="toggleFS()">⛶ Fullscreen</button>
+
+<script>
+// ══════════════════════════════════════════════
+// SCENE MANAGER — Three.js setup
+// ══════════════════════════════════════════════
+class SceneManager {
+  constructor() {
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x0a0f1a);
+    this.scene.fog = new THREE.Fog(0x0a0f1a, 6, 18);
+
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    this.camera.position.set(3, 3, 5);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+
+    this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.target.set(0, 0.5, 0);
+    this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
+
+    this.setupLighting();
+    this.createFloor();
+
+    window.addEventListener('resize', () => this.onResize());
+  }
+
+  setupLighting() {
+    const amb = new THREE.HemisphereLight(0xffffff, 0x1a1a2e, 1.8);
+    this.scene.add(amb);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 2.2);
+    dir.position.set(5, 8, 6);
+    dir.castShadow = true;
+    dir.shadow.mapSize.set(2048, 2048);
+    dir.shadow.bias = -0.0001;
+    const d = 6;
+    dir.shadow.camera.left = -d; dir.shadow.camera.right = d;
+    dir.shadow.camera.top = d; dir.shadow.camera.bottom = -d;
+    this.scene.add(dir);
+
+    const fill = new THREE.DirectionalLight(0xc8d8ff, 1.0);
+    fill.position.set(-4, 4, -4);
+    this.scene.add(fill);
+  }
+
+  createFloor() {
+    const geo = new THREE.PlaneGeometry(20, 20);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.2 });
+    const floor = new THREE.Mesh(geo, mat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    this.scene.add(floor);
+
+    const grid = new THREE.GridHelper(20, 40, 0x1e3a5f, 0x0f2035);
+    grid.position.y = 0.002;
+    this.scene.add(grid);
+  }
+
+  clearInteractables() {
+    const toRemove = [];
+    this.scene.traverse(c => { if (c.userData && c.userData.interactive) toRemove.push(c); });
+    toRemove.forEach(c => {
+      if (c.parent) c.parent.remove(c);
+      else this.scene.remove(c);
+    });
+  }
+
+  onResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  render() {
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// ══════════════════════════════════════════════
+// 3D MODEL BUILDERS
+// ══════════════════════════════════════════════
+const MAT = {
+  orange: () => new THREE.MeshPhysicalMaterial({ color: 0xff6b00, roughness: 0.3, metalness: 0.1, clearcoat: 0.6 }),
+  dark: () => new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 }),
+  chrome: () => new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.15, metalness: 0.95 }),
+  alu: () => new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.5, metalness: 0.6 }),
+  blue: () => new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.2 }),
+  green: () => new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4, metalness: 0.1 }),
+  red: () => new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.1 }),
+  gray: () => new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6, metalness: 0.3 }),
+  rubber: () => new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0.0 }),
+  gold: () => new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.7 }),
+};
+
+function cyl(rT, rB, h, mat) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rT, rB, h, 24), mat);
+  m.castShadow = true; m.receiveShadow = true; return m;
+}
+function box(w, h, d, mat) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.castShadow = true; m.receiveShadow = true; return m;
+}
+
+// Build robot arm
+function buildRobotArm(label = true) {
+  const root = new THREE.Group();
+  root.userData = { interactive: true };
+
+  // Base
+  const base = cyl(0.18, 0.22, 0.12, MAT.dark());
+  base.position.y = 0.06;
+  base.userData = { partName: 'Base', desc: 'The stationary foundation that supports the entire robot and houses the J1 rotation motor.' };
+  root.add(base);
+
+  // J1 housing
+  const j1 = cyl(0.14, 0.14, 0.22, MAT.orange());
+  j1.position.y = 0.23;
+  j1.userData = { partName: 'Joint 1 (Swivel)', desc: 'Rotates the entire arm around the vertical axis — provides the widest range of motion.' };
+  root.add(j1);
+
+  // Shoulder motor
+  const sh = cyl(0.1, 0.1, 0.18, MAT.dark());
+  sh.rotation.z = Math.PI / 2; sh.position.set(0, 0.38, 0);
+  sh.userData = { partName: 'Shoulder Joint', desc: 'The J2 joint that tilts the upper arm up and down — critical for vertical reach.' };
+  root.add(sh);
+
+  // Upper arm
+  const arm = box(0.1, 0.55, 0.1, MAT.orange());
+  arm.position.y = 0.72;
+  arm.userData = { partName: 'Upper Arm (Link 2)', desc: 'The main structural link connecting shoulder to elbow — determines the robot\'s reach.' };
+  root.add(arm);
+
+  // Elbow
+  const elb = cyl(0.08, 0.08, 0.18, MAT.dark());
+  elb.rotation.z = Math.PI / 2; elb.position.y = 1.0;
+  elb.userData = { partName: 'Elbow Joint', desc: 'The J3 joint that bends the forearm — extends or folds the arm to reach different distances.' };
+  root.add(elb);
+
+  // Forearm
+  const fa = cyl(0.05, 0.04, 0.4, MAT.orange());
+  fa.position.y = 1.22;
+  fa.userData = { partName: 'Forearm (Link 3)', desc: 'The tapered link extending from elbow to wrist — houses wrist rotation motors internally.' };
+  root.add(fa);
+
+  // Wrist
+  const wrist = box(0.09, 0.1, 0.09, MAT.dark());
+  wrist.position.y = 1.45;
+  wrist.userData = { partName: 'Wrist Assembly', desc: 'Contains J4, J5, J6 joints — provides 3 axes of rotation for precise orientation of the end effector.' };
+  root.add(wrist);
+
+  // End effector / gripper
+  const ef = box(0.12, 0.04, 0.04, MAT.chrome());
+  ef.position.y = 1.52;
+  ef.userData = { partName: 'End Effector (Gripper)', desc: 'The tool at the robot\'s wrist — can be a gripper, welder, suction cup, or any task-specific device.' };
+  root.add(ef);
+
+  const f1 = box(0.02, 0.07, 0.03, MAT.orange());
+  f1.position.set(0.04, 1.57, 0); f1.castShadow = true;
+  f1.userData = { partName: 'End Effector (Gripper)', desc: 'Finger 1 of the parallel gripper.' };
+  root.add(f1);
+
+  const f2 = box(0.02, 0.07, 0.03, MAT.orange());
+  f2.position.set(-0.04, 1.57, 0); f2.castShadow = true;
+  f2.userData = { partName: 'End Effector (Gripper)', desc: 'Finger 2 of the parallel gripper.' };
+  root.add(f2);
+
+  return root;
+}
+
+// Build grippers for Level 2
+function buildParallelGripper() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, gripperType: 'parallel', name: 'Parallel Jaw Gripper' };
+  const body = box(0.3, 0.15, 0.15, MAT.dark());
+  body.position.y = 0.4;
+  g.add(body);
+  const f1 = box(0.04, 0.2, 0.12, MAT.orange());
+  f1.position.set(0.1, 0.22, 0); g.add(f1);
+  const f2 = box(0.04, 0.2, 0.12, MAT.orange());
+  f2.position.set(-0.1, 0.22, 0); g.add(f2);
+  const mount = cyl(0.05, 0.05, 0.08, MAT.chrome());
+  mount.position.y = 0.52; g.add(mount);
+  return g;
+}
+
+function buildVacuumGripper() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, gripperType: 'vacuum', name: 'Vacuum Suction Gripper' };
+  const body = cyl(0.12, 0.12, 0.12, MAT.dark());
+  body.position.y = 0.45; g.add(body);
+  const cup1 = cyl(0.06, 0.08, 0.05, MAT.rubber());
+  cup1.position.set(0.08, 0.35, 0.08); g.add(cup1);
+  const cup2 = cyl(0.06, 0.08, 0.05, MAT.rubber());
+  cup2.position.set(-0.08, 0.35, 0.08); g.add(cup2);
+  const cup3 = cyl(0.06, 0.08, 0.05, MAT.rubber());
+  cup3.position.set(0, 0.35, -0.08); g.add(cup3);
+  const mount = cyl(0.04, 0.04, 0.08, MAT.chrome());
+  mount.position.y = 0.55; g.add(mount);
+  return g;
+}
+
+function buildMagneticGripper() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, gripperType: 'magnetic', name: 'Electromagnetic Gripper' };
+  const body = cyl(0.14, 0.14, 0.1, MAT.dark());
+  body.position.y = 0.42; g.add(body);
+  const mag = cyl(0.12, 0.12, 0.05, MAT.blue());
+  mag.position.y = 0.35; g.add(mag);
+  // Coil indicator
+  const coil = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.015, 8, 24), MAT.gold());
+  coil.position.y = 0.35; coil.rotation.x = Math.PI / 2; g.add(coil);
+  const mount = cyl(0.04, 0.04, 0.08, MAT.chrome());
+  mount.position.y = 0.52; g.add(mount);
+  return g;
+}
+
+// Build cell layout objects for Level 3
+function buildConveyor() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, cellType: 'conveyor', name: 'Conveyor Belt' };
+  const frame = box(1.4, 0.08, 0.35, MAT.alu());
+  frame.position.y = 0.3; g.add(frame);
+  const belt = box(1.3, 0.02, 0.3, MAT.rubber());
+  belt.position.y = 0.35; g.add(belt);
+  // Rollers
+  for (let i = -0.55; i <= 0.55; i += 0.22) {
+    const r = cyl(0.04, 0.04, 0.32, MAT.chrome());
+    r.rotation.z = Math.PI / 2; r.position.set(i, 0.26, 0); g.add(r);
+  }
+  // Legs
+  [[-0.6, -0.12], [-0.6, 0.12], [0.6, -0.12], [0.6, 0.12]].forEach(([x, z]) => {
+    const leg = box(0.04, 0.26, 0.04, MAT.alu());
+    leg.position.set(x, 0.13, z); g.add(leg);
+  });
+  return g;
+}
+
+function buildWorkTable() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, cellType: 'table', name: 'Workpiece Table' };
+  const top = box(0.6, 0.06, 0.6, MAT.alu());
+  top.position.y = 0.45; g.add(top);
+  [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]].forEach(([x, z]) => {
+    const leg = box(0.04, 0.42, 0.04, MAT.gray());
+    leg.position.set(x, 0.21, z); g.add(leg);
+  });
+  // Workpiece on table
+  const wp = box(0.15, 0.1, 0.15, MAT.gold());
+  wp.position.y = 0.53; g.add(wp);
+  return g;
+}
+
+function buildSmallRobotArm() {
+  const g = new THREE.Group();
+  g.userData = { interactive: true, cellType: 'robot', name: 'Robot Arm' };
+  const base = cyl(0.12, 0.15, 0.08, MAT.dark());
+  base.position.y = 0.04; g.add(base);
+  const col = cyl(0.06, 0.06, 0.4, MAT.orange());
+  col.position.y = 0.28; g.add(col);
+  const arm = box(0.08, 0.08, 0.35, MAT.orange());
+  arm.position.set(0, 0.5, 0.15); g.add(arm);
+  const wrist = box(0.06, 0.06, 0.06, MAT.dark());
+  wrist.position.set(0, 0.5, 0.35); g.add(wrist);
+  return g;
+}
+
+// ══════════════════════════════════════════════
+// INTERACTION MANAGER — raycasting, hover, click, drag
+// ══════════════════════════════════════════════
+class InteractionManager {
+  constructor(sceneManager) {
+    this.sm = sceneManager;
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    this.hoveredObj = null;
+    this.originalColors = new Map();
+    this.onClick = null;
+    this.showTooltips = true;
+    this.dragEnabled = false;
+    this.dragging = null;
+    this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    this.dragOffset = new THREE.Vector3();
+    this.interactables = [];
+
+    const canvas = this.sm.renderer.domElement;
+    canvas.style.touchAction = 'none'; // Prevent browser panning on interaction
+
+    window.addEventListener('pointermove', e => this.onPointerMove(e));
+    canvas.addEventListener('pointerdown', e => this.onPointerDown(e));
+    window.addEventListener('pointerup', e => this.onPointerUp(e));
+    canvas.addEventListener('click', e => this.onClickEvent(e));
+  }
+
+  setInteractables(list) { this.interactables = list; }
+
+  getIntersected(e) {
+    const rect = this.sm.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.sm.camera);
+
+    const targets = [];
+    this.interactables.forEach(g => g.traverse(c => { if (c.isMesh) targets.push(c); }));
+    const hits = this.raycaster.intersectObjects(targets, false);
+    return hits.length > 0 ? hits[0] : null;
+  }
+
+  findParentGroup(obj) {
+    let p = obj;
+    while (p) {
+      if (p.userData && p.userData.interactive) return p;
+      p = p.parent;
+    }
+    return null;
+  }
+
+  onPointerMove(e) {
+    if (!e.isPrimary && e.type !== 'mousemove') return; // Ignore secondary touches
+    
+    const rect = this.sm.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.sm.camera);
+
+    // Dragging mode - always process tracking even out of bounds
+    if (this.dragging && this.dragEnabled) {
+      const pt = new THREE.Vector3();
+      if (this.raycaster.ray.intersectPlane(this.dragPlane, pt)) {
+        pt.add(this.dragOffset);
+        // Snap to grid (0.5 units)
+        this.dragging.position.x = Math.round(pt.x * 2) / 2;
+        this.dragging.position.z = Math.round(pt.z * 2) / 2;
+      }
+      return;
+    }
+
+    // Stop processing hover if hovering over UI elements
+    if (e.target !== this.sm.renderer.domElement) return;
+
+    const tooltip = document.getElementById('tooltip');
+    const targets = [];
+    this.interactables.forEach(g => g.traverse(c => { if (c.isMesh) targets.push(c); }));
+    const hits = this.raycaster.intersectObjects(targets, false);
+    const hit = hits.length > 0 ? hits[0] : null;
+
+    // Reset previous hover
+    if (this.hoveredObj) {
+      this.resetHighlight(this.hoveredObj);
+      this.hoveredObj = null;
+      tooltip.style.display = 'none';
+      this.sm.renderer.domElement.style.cursor = 'default';
+    }
+
+    if (!hit) return;
+
+    const mesh = hit.object;
+    const group = this.findParentGroup(mesh);
+
+    // Highlight
+    this.hoveredObj = mesh;
+    this.highlight(mesh);
+    this.sm.renderer.domElement.style.cursor = 'pointer';
+
+    // Tooltip
+    if (this.showTooltips && (mesh.userData.partName || (group && group.userData.name))) {
+      const name = mesh.userData.partName || group?.userData.name || '';
+      const desc = mesh.userData.desc || '';
+      tooltip.innerHTML = `<strong>${name}</strong>${desc ? '<br>' + desc : ''}`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 12) + 'px';
+      tooltip.style.top = (e.clientY - 8) + 'px';
+    }
+  }
+
+  onClickEvent(e) {
+    if (this.dragging) return;
+    const hit = this.getIntersected(e);
+    if (hit && this.onClick) {
+      const group = this.findParentGroup(hit.object);
+      this.onClick(hit.object, group);
+    }
+  }
+
+  onPointerDown(e) {
+    if (!e.isPrimary && e.type !== 'mousedown') return;
+    if (!this.dragEnabled) return;
+    const hit = this.getIntersected(e);
+    if (!hit) return;
+    const group = this.findParentGroup(hit.object);
+    if (!group || !group.userData.cellType) return;
+
+    this.sm.controls.enabled = false;
+    this.dragging = group;
+
+    const pt = new THREE.Vector3();
+    this.raycaster.setFromCamera(this.mouse, this.sm.camera);
+    if (this.raycaster.ray.intersectPlane(this.dragPlane, pt)) {
+      this.dragOffset.copy(group.position).sub(pt);
+    } else {
+      this.dragOffset.set(0, 0, 0);
+    }
+  }
+
+  onPointerUp(e) {
+    if (this.dragging) {
+      this.dragging = null;
+      this.sm.controls.enabled = true;
+    }
+  }
+
+  highlight(mesh) {
+    if (!mesh.material) return;
+    if (!this.originalColors.has(mesh.uuid)) {
+      this.originalColors.set(mesh.uuid, mesh.material.emissive ? mesh.material.emissive.clone() : null);
+    }
+    if (mesh.material.emissive) {
+      mesh.material.emissive.set(0x334488);
+    }
+  }
+
+  resetHighlight(mesh) {
+    if (!mesh.material || !mesh.material.emissive) return;
+    const orig = this.originalColors.get(mesh.uuid);
+    if (orig) mesh.material.emissive.copy(orig);
+    else mesh.material.emissive.set(0x000000);
+  }
+}
+
+// ══════════════════════════════════════════════
+// QUIZ MANAGER — questions, scoring, levels
+// ══════════════════════════════════════════════
+class QuizManager {
+  constructor(sceneManager, interactionManager) {
+    this.sm = sceneManager;
+    this.im = interactionManager;
+    this.level = 1;
+    this.score = 0;
+    this.totalAttempts = 0;
+    this.qIndex = 0;
+    this.answered = false;
+
+    // Level 1 questions — identify robot parts
+    this.level1Questions = [
+      { q: 'Click on the BASE of the robot arm.', answer: 'Base', hint: 'The heavy flat part at the bottom that keeps the robot stable.' },
+      { q: 'Click on the UPPER ARM (Link 2).', answer: 'Upper Arm (Link 2)', hint: 'The long main beam connecting shoulder to elbow.' },
+      { q: 'Click on the ELBOW JOINT.', answer: 'Elbow Joint', hint: 'The cylindrical motor housing between upper arm and forearm.' },
+      { q: 'Click on the END EFFECTOR (Gripper).', answer: 'End Effector (Gripper)', hint: 'The tool at the very tip — the "hand" of the robot.' },
+      { q: 'Click on the WRIST ASSEMBLY.', answer: 'Wrist Assembly', hint: 'The small block between forearm and gripper containing 3 rotation axes.' },
+      { q: 'Click on the FOREARM (Link 3).', answer: 'Forearm (Link 3)', hint: 'The tapered cylinder between elbow and wrist.' },
+    ];
+
+    // Level 2 questions — gripper selection
+    this.level2Questions = [
+      { q: 'Select the best gripper for handling flat glass sheets.', answer: 'vacuum', why: 'Vacuum suction cups are ideal for flat, smooth surfaces like glass — they provide even force distribution without risk of cracking.' },
+      { q: 'Which gripper is best for picking up steel bolts from a bin?', answer: 'magnetic', why: 'Electromagnetic grippers attract ferrous metals instantly — perfect for steel bolts in unstructured bin-picking scenarios.' },
+      { q: 'Choose the gripper for assembling electronic circuit boards.', answer: 'parallel', why: 'Parallel jaw grippers provide precise, controlled clamping — essential for delicate PCB handling where pressure must be carefully regulated.' },
+      { q: 'Pick a gripper for handling cardboard boxes in a warehouse.', answer: 'vacuum', why: 'Vacuum grippers can pick flat box surfaces from the top — fastest and most reliable for box handling in logistics.' },
+      { q: 'Select the gripper for sorting iron scraps in a recycling plant.', answer: 'magnetic', why: 'Electromagnetic grippers can grab and release ferrous materials instantly with no mechanical wear — ideal for recycling.' },
+    ];
+
+    // Level 3 — layout evaluation
+    this.level3Task = {
+      q: 'Design an efficient robotic cell layout. Place the Robot Arm, Conveyor, and Workpiece Table so they form an efficient assembly line.',
+      instructions: 'Drag each object to position it. The robot should be within reach of both the conveyor and the work table. Click "Evaluate Layout" when ready.',
+    };
+
+    this.im.onClick = (mesh, group) => this.handleClick(mesh, group);
+  }
+
+  setLevel(lvl) {
+    this.level = lvl;
+    this.qIndex = 0;
+    this.answered = false;
+
+    // Update UI buttons
+    document.querySelectorAll('.level-btn').forEach((b, i) => {
+      b.classList.toggle('active', i + 1 === lvl);
+    });
+
+    document.getElementById('drag-hint').style.display = lvl === 3 ? 'block' : 'none';
+    this.im.dragEnabled = lvl === 3;
+    this.im.showTooltips = lvl === 1;
+    this.sm.clearInteractables();
+
+    if (lvl === 1) this.setupLevel1();
+    else if (lvl === 2) this.setupLevel2();
+    else this.setupLevel3();
+  }
+
+  // ── Level 1 — Robot Part Identification ──
+  setupLevel1() {
+    document.getElementById('level-title').textContent = 'Level 1 — Guided';
+    this.sm.camera.position.set(2.5, 2.5, 4);
+    this.sm.controls.target.set(0, 0.7, 0);
+
+    const robot = buildRobotArm();
+    this.sm.scene.add(robot);
+    this.im.setInteractables([robot]);
+    this.currentRobot = robot;
+    this.showQuestion();
+  }
+
+  // ── Level 2 — Gripper Selection ──
+  setupLevel2() {
+    document.getElementById('level-title').textContent = 'Level 2 — Assisted';
+    this.sm.camera.position.set(2, 2, 4);
+    this.sm.controls.target.set(0, 0.3, 0);
+
+    const g1 = buildParallelGripper(); g1.position.set(-1.2, 0, 0);
+    const g2 = buildVacuumGripper(); g2.position.set(0, 0, 0);
+    const g3 = buildMagneticGripper(); g3.position.set(1.2, 0, 0);
+
+    this.sm.scene.add(g1, g2, g3);
+    this.im.setInteractables([g1, g2, g3]);
+    this.grippers = [g1, g2, g3];
+    this.showQuestion();
+  }
+
+  // ── Level 3 — Cell Layout Design ──
+  setupLevel3() {
+    document.getElementById('level-title').textContent = 'Level 3 — Independent';
+    this.sm.camera.position.set(4, 5, 6);
+    this.sm.controls.target.set(0, 0, 0);
+
+    const robot = buildSmallRobotArm(); robot.position.set(-2, 0, 0);
+    const conv = buildConveyor(); conv.position.set(2, 0, 0);
+    const table = buildWorkTable(); table.position.set(0, 0, -2);
+
+    // Placement zones (visual hints)
+    const zoneMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.06, side: THREE.DoubleSide });
+    const zoneGeo = new THREE.PlaneGeometry(6, 6);
+    const zone = new THREE.Mesh(zoneGeo, zoneMat);
+    zone.rotation.x = -Math.PI / 2; zone.position.y = 0.003;
+    this.sm.scene.add(zone);
+
+    this.sm.scene.add(robot, conv, table);
+    this.im.setInteractables([robot, conv, table]);
+    this.cellObjects = { robot, conv, table };
+    this.showQuestion();
+  }
+
+  showQuestion() {
+    const fb = document.getElementById('feedback-area');
+    fb.innerHTML = '';
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.disabled = true;
+    this.answered = false;
+
+    if (this.level === 1) {
+      nextBtn.style.display = 'block';
+      const qs = this.level1Questions;
+      if (this.qIndex >= qs.length) { this.showComplete(); return; }
+      const q = qs[this.qIndex];
+      document.getElementById('question-text').textContent = q.q;
+      document.getElementById('instructions-text').innerHTML = `<em>Hint:</em> ${q.hint}<br><br>Click the correct part on the 3D robot.`;
+      this.updateProgress(qs.length);
+    } else if (this.level === 2) {
+      nextBtn.style.display = 'block';
+      const qs = this.level2Questions;
+      if (this.qIndex >= qs.length) { this.showComplete(); return; }
+      const q = qs[this.qIndex];
+      document.getElementById('question-text').textContent = q.q;
+      document.getElementById('instructions-text').textContent = 'Click the correct gripper in the 3D scene.';
+      this.updateProgress(qs.length);
+    } else {
+      document.getElementById('question-text').textContent = this.level3Task.q;
+      document.getElementById('instructions-text').textContent = this.level3Task.instructions;
+      // Replace next button with evaluate button
+      nextBtn.style.display = 'none';
+      fb.innerHTML = '<button class="submit-btn" onclick="quiz.evaluateLayout()">🔍 Evaluate Layout</button>';
+      document.getElementById('q-progress').textContent = '1/1';
+      document.getElementById('progress-fill').style.width = '0%';
+    }
+  }
+
+  handleClick(mesh, group) {
+    if (this.answered) return;
+
+    if (this.level === 1) {
+      const q = this.level1Questions[this.qIndex];
+      const name = mesh.userData.partName || '';
+      this.totalAttempts++;
+      document.getElementById('attempts-val').textContent = this.totalAttempts;
+
+      if (name === q.answer) {
+        this.score += 10;
+        this.answered = true;
+        this.showFeedback('correct', `✅ Correct! That's the ${name}.`);
+        document.getElementById('next-btn').disabled = false;
+      } else {
+        this.showFeedback('wrong', `❌ That's the ${name || 'unknown part'}. Try again!`);
+      }
+    } else if (this.level === 2) {
+      if (!group || !group.userData.gripperType) return;
+      const q = this.level2Questions[this.qIndex];
+      this.totalAttempts++;
+      document.getElementById('attempts-val').textContent = this.totalAttempts;
+
+      if (group.userData.gripperType === q.answer) {
+        this.score += 10;
+        this.answered = true;
+        this.showFeedback('correct', `✅ Correct! ${q.why}`);
+        document.getElementById('next-btn').disabled = false;
+      } else {
+        this.showFeedback('wrong', `❌ That's the ${group.userData.name}. Not the best choice here. Try again!`);
+      }
+    }
+
+    document.getElementById('score-val').textContent = this.score;
+  }
+
+  evaluateLayout() {
+    if (!this.cellObjects) return;
+    const { robot, conv, table } = this.cellObjects;
+
+    const rPos = robot.position;
+    const cPos = conv.position;
+    const tPos = table.position;
+
+    const distRC = rPos.distanceTo(cPos);
+    const distRT = rPos.distanceTo(tPos);
+    const distCT = cPos.distanceTo(tPos);
+
+    this.totalAttempts++;
+    document.getElementById('attempts-val').textContent = this.totalAttempts;
+
+    let feedback = '';
+    let cls = 'info';
+    let points = 0;
+
+    // Evaluation logic
+    if (distRC <= 2.0 && distRT <= 2.0) {
+      points = 10;
+      cls = 'correct';
+      feedback = '🏆 Excellent layout! The robot can reach both the conveyor and the work table efficiently.';
+      if (distCT <= 2.5) {
+        feedback += ' The conveyor-to-table flow is also compact — great for cycle time.';
+        points = 15;
+      }
+    } else if (distRC <= 3.0 || distRT <= 3.0) {
+      points = 5;
+      cls = 'info';
+      feedback = '⚠️ Needs improvement. ';
+      if (distRC > 2.0) feedback += 'The robot is too far from the conveyor. ';
+      if (distRT > 2.0) feedback += 'The robot is too far from the work table. ';
+      feedback += 'Try moving objects closer together.';
+    } else {
+      cls = 'wrong';
+      feedback = '❌ Poor layout. All objects are too far apart. The robot cannot reach the conveyor or work table. Try arranging them within arm\'s reach (≤2 units).';
+    }
+
+    this.score += points;
+    document.getElementById('score-val').textContent = this.score;
+    this.showFeedback(cls, feedback);
+  }
+
+  nextQuestion() {
+    this.qIndex++;
+    this.showQuestion();
+  }
+
+  showFeedback(type, text) {
+    const fb = document.getElementById('feedback-area');
+    const existing = fb.querySelector('.feedback');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.className = `feedback ${type}`;
+    div.textContent = text;
+
+    // Keep evaluate button for level 3
+    if (this.level === 3) {
+      fb.insertBefore(div, fb.firstChild);
+    } else {
+      fb.appendChild(div);
+    }
+  }
+
+  showComplete() {
+    document.getElementById('question-text').textContent = '🎉 Level Complete!';
+    document.getElementById('instructions-text').textContent = `You scored ${this.score} points. Try the next level!`;
+    document.getElementById('feedback-area').innerHTML = '';
+    document.getElementById('next-btn').disabled = true;
+    document.getElementById('progress-fill').style.width = '100%';
+  }
+
+  updateProgress(total) {
+    document.getElementById('q-progress').textContent = `${this.qIndex + 1}/${total}`;
+    document.getElementById('progress-fill').style.width = `${(this.qIndex / total) * 100}%`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// INITIALIZATION
+// ══════════════════════════════════════════════
+let sm, im, quiz;
+
+function init() {
+  try {
+    sm = new SceneManager();
+    im = new InteractionManager(sm);
+    quiz = new QuizManager(sm, im);
+
+    // Make quiz globally accessible for button onclick handlers
+    window.quiz = quiz;
+
+    // Start level 1
+    quiz.setLevel(1);
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      sm.render();
+    }
+    animate();
+
+    // Remove loader
+    const loader = document.getElementById('loader');
+    loader.style.opacity = '0';
+    setTimeout(() => loader.remove(), 500);
+
+  } catch (err) {
+    console.error('Init error:', err);
+    document.getElementById('loader').innerHTML = `<div style="color:#ef4444;text-align:center;font-family:sans-serif"><h3>Error</h3><p>${err.message}</p></div>`;
+  }
+}
+
+// Fullscreen toggle
+function toggleFS() {
+  const el = document.documentElement;
+  if (!document.fullscreenElement) { el.requestFullscreen?.() || el.webkitRequestFullscreen?.(); }
+  else { document.exitFullscreen?.() || document.webkitExitFullscreen?.(); }
+}
+window.toggleFS = toggleFS;
+
+window.addEventListener('load', init);
+
+// Failsafe loader removal
+setTimeout(() => {
+  const l = document.getElementById('loader');
+  if (l && l.style.opacity !== '0') { l.style.opacity = '0'; setTimeout(() => l.remove(), 500); }
+}, 5000);
+</script>
+</body>
+</html>

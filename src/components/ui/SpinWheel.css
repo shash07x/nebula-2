@@ -1,0 +1,308 @@
+/* ═══════════════════════════════════════════════
+ * SPIN WHEEL — BONUS CONTENT GAME
+ * Uses the Nebula brand wheel-* color palette
+ * ═══════════════════════════════════════════════ */
+
+/* Overlay */
+.spin-wheel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Container */
+.spin-wheel-container {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(79, 140, 255, 0.15);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(79, 140, 255, 0.08);
+  overflow: hidden;
+}
+
+.sw-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.035);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.sw-close:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff6b6b;
+}
+
+/* Header */
+.sw-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.035);
+}
+.sw-header-icon {
+  color: var(--accent-gold);
+  filter: drop-shadow(0 0 6px rgba(255, 214, 0, 0.4));
+}
+.sw-header h2 {
+  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+}
+.sw-header p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Body — two-column layout */
+.sw-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 400px;
+}
+
+/* ── Wheel Section ── */
+.sw-wheel-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  border-right: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.sw-pointer {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.8rem;
+  color: var(--accent-gold);
+  filter: drop-shadow(0 0 8px rgba(255, 214, 0, 0.6));
+  z-index: 5;
+  line-height: 1;
+}
+
+.sw-wheel-wrapper {
+  width: 280px;
+  height: 280px;
+  position: relative;
+  filter: drop-shadow(0 0 20px rgba(79, 140, 255, 0.1));
+}
+
+.sw-wheel-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Spin button */
+.sw-spin-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  margin-top: 18px;
+  border-radius: 100px;
+  background: var(--gradient-primary);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 20px rgba(79, 140, 255, 0.3);
+  transition: all 0.3s;
+}
+.sw-spin-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 28px rgba(79, 140, 255, 0.5);
+}
+.sw-spin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.sw-spin-btn.spinning {
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+}
+
+.sw-spin-icon {
+  animation: sw-rotate 0.8s linear infinite;
+}
+
+@keyframes sw-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Content Panel ── */
+.sw-content-panel {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  max-height: 430px;
+}
+
+.sw-content-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  width: fit-content;
+}
+.sw-content-emoji {
+  font-size: 1.2rem;
+}
+.sw-content-type {
+  font-family: var(--font-heading);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+
+.sw-content-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sw-content-body {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+.sw-content-body p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Pro upsell banner */
+.sw-pro-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(122, 35, 46, 0.2), rgba(89, 45, 88, 0.2));
+  border: 1px solid rgba(122, 35, 46, 0.3);
+  color: var(--wheel-blush);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sw-pro-banner:hover {
+  background: linear-gradient(135deg, rgba(122, 35, 46, 0.3), rgba(89, 45, 88, 0.3));
+}
+.sw-pro-banner svg:first-child {
+  color: var(--accent-gold);
+}
+
+/* XP bonus */
+.sw-content-xp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--accent-green);
+  font-weight: 600;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* ── Placeholder (before spin) ── */
+.sw-content-placeholder {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.sw-placeholder-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+.sw-placeholder-icon {
+  color: var(--accent-purple);
+  opacity: 0.35;
+}
+.sw-placeholder-inner h3 {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+.sw-placeholder-inner p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 260px;
+  line-height: 1.5;
+}
+.sw-placeholder-segments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.sw-placeholder-tag {
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+/* ── Light Mode ── */
+[data-theme="light"] .spin-wheel-container {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+[data-theme="light"] .sw-content-body {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .sw-body {
+    grid-template-columns: 1fr;
+  }
+  .sw-wheel-section {
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    padding: 16px;
+  }
+  .sw-wheel-wrapper {
+    width: 220px;
+    height: 220px;
+  }
+  .sw-content-panel {
+    max-height: 300px;
+  }
+}
+

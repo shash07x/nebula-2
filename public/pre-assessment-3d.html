@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Pre-Assessment Quiz | Robotics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --accent-blue: #2563eb;
+            --accent-cyan: #06b6d4;
+            --green: #10b981;
+            --red: #ef4444;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-dark);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 5%;
+        }
+
+        #scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* ─── UI PANEL ─── */
+        #ui-container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 600px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .glass-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .quiz-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .quiz-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* Progress & Timer */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .progress-wrapper {
+            height: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+            transition: width 0.4s ease;
+        }
+
+        /* Question */
+        #question-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.4;
+            margin-bottom: 24px;
+        }
+
+        /* Options */
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: rgba(255,255,255,0.8);
+            border: 2px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover {
+            border-color: var(--accent-cyan);
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.1);
+        }
+
+        .option-btn.selected {
+            border-color: var(--accent-blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .option-btn.correct {
+            border-color: var(--green);
+            background: rgba(16, 185, 129, 0.1);
+            color: #065f46;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+            color: #7f1d1d;
+        }
+
+        /* Next Button */
+        #next-btn {
+            margin-top: 24px;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+        }
+
+        #next-btn.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        #next-btn:hover {
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+            filter: brightness(1.1);
+        }
+
+        /* Completion Screen */
+        #completion-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
+            margin: 0 auto 24px auto;
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.3);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="scene-container"></div>
+
+    <div id="ui-container">
+        <div class="glass-card" id="quiz-card">
+            
+            <div id="quiz-content">
+                <div class="quiz-header">
+                    <div class="quiz-title">Quick Assessment</div>
+                    <div class="quiz-subtitle">Let's find your starting point</div>
+                </div>
+
+                <div class="status-bar">
+                    <span id="q-counter">Question 1 / 8</span>
+                    <span id="timer"><span style="color:var(--accent-blue)">⏱</span> <span id="time-val">00:00</span></span>
+                </div>
+
+                <div class="progress-wrapper">
+                    <div id="progress-fill"></div>
+                </div>
+
+                <div id="question-text">Loading question...</div>
+
+                <div class="options-grid" id="options-container">
+                    <!-- Options injected via JS -->
+                </div>
+
+                <button id="next-btn" onclick="nextQuestion()">Next Question ➔</button>
+            </div>
+
+            <div id="completion-screen">
+                <div class="quiz-header">
+                    <div class="quiz-title">Assessment Complete</div>
+                    <div class="quiz-subtitle">Here is your final score</div>
+                </div>
+                
+                <div class="score-circle" id="final-score">0%</div>
+                
+                <p style="color: var(--text-main); font-weight: 600; margin-bottom: 24px;" id="feedback-msg">
+                    Great job! You're ready to start your robotics journey.
+                </p>
+
+                <button id="next-btn" class="show" onclick="finishQuiz()">Continue to Course ➔</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // ═══════════════════════════════════════════════
+        //  QUIZ DATA
+        // ═══════════════════════════════════════════════
+        const QUESTIONS = [
+            {
+                text: "What does Industry 4.0 refer to in manufacturing?",
+                options: [
+                    "The integration of AI, IoT, and robotics in a smart factory",
+                    "The shift from coal to electric power in factories",
+                    "Using 4-axis robots exclusively",
+                    "The invention of the first programmable logic controller"
+                ],
+                correct: 0,
+                modelFn: 'createRobotIndustry40'
+            },
+            {
+                text: "Which robot type is best suited for high-speed pick-and-place in food packaging?",
+                options: ["Articulated 6-axis robot", "Cartesian gantry", "Delta robot", "SCARA robot"],
+                correct: 2,
+                modelFn: 'createDeltaRobot'
+            },
+            {
+                text: "What is the primary function of a robot controller?",
+                options: [
+                    "To generate electrical power for the factory",
+                    "To process commands and coordinate joint motion",
+                    "To pneumatically drive the actuators",
+                    "To provide a physical base for the robot"
+                ],
+                correct: 1,
+                modelFn: 'createRobotController'
+            },
+            {
+                text: "What is forward kinematics used for in robotics?",
+                options: [
+                    "Determining joint angles from a desired XYZ position",
+                    "Calculating the end-effector position from given joint angles",
+                    "Detecting collisions in the workspace",
+                    "Regulating the speed of the conveyor belt"
+                ],
+                correct: 1,
+                modelFn: 'createKinematicsRobot'
+            },
+            {
+                text: "When would you use Linear motion instead of Joint motion?",
+                options: [
+                    "When moving to a resting home position safely",
+                    "When the robot needs to follow a straight-line path precisely (e.g. welding)",
+                    "When trying to move as fast as possible bypassing obstacles",
+                    "When you want the robot to move in an unpredictable arc"
+                ],
+                correct: 1,
+                modelFn: 'createLinearMotionRobot'
+            },
+            {
+                text: "What is a TCP (Tool Center Point)?",
+                options: [
+                    "The central processing unit of the robot",
+                    "The defined reference point at the tip of the robot tool/end-effector",
+                    "The point where the robot connects to the floor",
+                    "The thermal cooling port on the motors"
+                ],
+                correct: 1,
+                modelFn: 'createTCPRobot'
+            },
+            {
+                text: "How do you reduce robot cycle time without changing the hardware?",
+                options: [
+                    "Increase the payload mass",
+                    "Add more joints to the robot arm",
+                    "Optimize motion paths, use blending, and run concurrent I/O operations",
+                    "Run the robot at a lower voltage"
+                ],
+                correct: 2,
+                modelFn: 'createCycleTimeRobot'
+            },
+            {
+                text: "In a robotic work cell design, what must be considered FIRST?",
+                options: [
+                    "The color of the robot paint",
+                    "The specific brand of PLC",
+                    "The robot reach envelope, material flow, and safety zones",
+                    "The number of windows in the factory"
+                ],
+                correct: 2,
+                modelFn: 'createWorkCellRobot'
+            }
+        ];
+
+        // ═══════════════════════════════════════════════
+        //  GLOBAL STATE
+        // ═══════════════════════════════════════════════
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+        let startTime;
+        let timerInterval;
+
+        // Three.js instances
+        let scene, camera, renderer, controls;
+        let activeModelGroup = null;
+        let animationMixers = [];
+        let clock = new THREE.Clock();
+        
+        // Materials Library
+        const MATS = {
+            base: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }),
+            arm: new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3, metalness: 0.4 }), // Orange
+            silver: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.8 }),
+            neon: new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 1 }),
+            redNeon: new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1 }),
+            greenNeon: new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.8 }),
+            box: new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.8 }),
+            wire: new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+        };
+
+        // ═══════════════════════════════════════════════
+        //  INIT functions
+        // ═══════════════════════════════════════════════
+        function initApp() {
+            initScene();
+            createLights();
+            createGrid();
+            
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            loadQuestion(0);
+            animate();
+        }
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a); // dark background matching UI
+            scene.fog = new THREE.Fog(0x0f172a, 10, 40);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(-6, 4, 8);
+            
+            // Shift camera center to the left so it's not obscured by the UI panel
+            updateCameraOffset();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createLights() {
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(10, 15, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const spotLight = new THREE.SpotLight(0x06b6d4, 2);
+            spotLight.position.set(-5, 10, -5);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.5;
+            scene.add(spotLight);
+        }
+
+        function createGrid() {
+            const grid = new THREE.GridHelper(30, 30, 0x1e293b, 0x1e293b);
+            scene.add(grid);
+
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(30, 30),
+                new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.01;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+
+        function clearCurrentModel() {
+            if (activeModelGroup) {
+                scene.remove(activeModelGroup);
+                activeModelGroup = null;
+            }
+            // Clear animations
+            animationMixers = [];
+        }
+
+        // ═══════════════════════════════════════════════
+        //  ROBOT MODELS (8 distinct scenes)
+        // ═══════════════════════════════════════════════
+
+        // 1. Industry 4.0: Smart factory elements
+        function createRobotIndustry40() {
+            const g = new THREE.Group();
+            
+            // Robot
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.4, 16), MATS.base);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2, 0.3), MATS.arm);
+            arm.position.set(0, 1.2, 0);
+            arm.rotation.z = 0.2;
+            g.add(base, arm);
+
+            // Conveyor
+            const conv = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 1), MATS.silver);
+            conv.position.set(2, 0.25, 2);
+            g.add(conv);
+
+            // IoT Sensor Nodes
+            const node1 = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), MATS.neon);
+            node1.position.set(2, 0.8, 2);
+            const node2 = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), MATS.neon);
+            node2.position.set(0, 2.3, -0.3);
+            g.add(node1, node2);
+
+            // Data link line
+            const matLine = new THREE.LineBasicMaterial({ color: 0x06b6d4 });
+            const pts = [node1.position, node2.position];
+            const geoLine = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(geoLine, matLine);
+            g.add(line);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 2. Delta Robot
+        function createDeltaRobot() {
+            const g = new THREE.Group();
+            g.position.y = 2; // Hanging down
+
+            const topPlate = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.2, 3), MATS.base);
+            topPlate.rotation.y = Math.PI / 6;
+            g.add(topPlate);
+
+            // 3 arms
+            for(let i=0; i<3; i++) {
+                const angle = (i/3) * Math.PI * 2;
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5), MATS.arm);
+                arm.position.set(Math.cos(angle)*0.5, -0.7, Math.sin(angle)*0.5);
+                arm.rotation.x = Math.sin(angle)*0.3;
+                arm.rotation.z = -Math.cos(angle)*0.3;
+                g.add(arm);
+            }
+
+            const bottomPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 3), MATS.silver);
+            bottomPlate.position.y = -1.5;
+            g.add(bottomPlate);
+
+            // Conveyor below
+            const conv = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 1.5), MATS.base);
+            conv.position.set(0, -2, 0);
+            g.add(conv);
+
+            // Product boxes
+            const box1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.4), MATS.box);
+            box1.position.set(-1, -1.85, 0);
+            const box2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.4), MATS.box);
+            box2.position.set(0, -1.85, 0);
+            g.add(box1, box2);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 3. Robot Controller
+        function createRobotController() {
+            const g = new THREE.Group();
+
+            // Cabinet
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 1), MATS.base);
+            cab.position.set(-2, 1.25, -1);
+            g.add(cab);
+
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), MATS.neon);
+            screen.position.set(-1.24, 1.8, -1);
+            screen.rotation.y = Math.PI / 2;
+            g.add(screen);
+
+            // Robot
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.3, 16), MATS.base);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.5, 0.25), MATS.arm);
+            arm.position.y = 0.9;
+            const jnt = new THREE.Mesh(new THREE.SphereGeometry(0.3), MATS.silver);
+            jnt.position.y = 1.6;
+            g.add(base, arm, jnt);
+
+            // Cable
+            const curve = new THREE.QuadraticBezierCurve3(
+                new THREE.Vector3(-2, 0.5, -1),
+                new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 0.2, 0)
+            );
+            const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.05, 8, false), MATS.wire);
+            g.add(tube);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 4. Forward Kinematics (Angles to Position)
+        function createKinematicsRobot() {
+            const g = new THREE.Group();
+
+            const j1 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.2), MATS.base);
+            
+            const a1 = new THREE.Group();
+            const arm1Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 0.2), MATS.arm);
+            arm1Mesh.position.y = 0.6;
+            a1.add(arm1Mesh);
+            a1.position.y = 0.1;
+            a1.rotation.z = 0.4;
+            j1.add(a1);
+
+            const j2 = new THREE.Mesh(new THREE.SphereGeometry(0.2), MATS.silver);
+            j2.position.y = 1.2;
+            a1.add(j2);
+
+            const a2 = new THREE.Group();
+            const arm2Mesh = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.0, 0.15), MATS.arm);
+            arm2Mesh.position.y = 0.5;
+            a2.add(arm2Mesh);
+            a2.rotation.z = 0.8;
+            j2.add(a2);
+
+            // Visualize Angle arcs
+            const arc1 = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.02, 4, 32, 0.4), MATS.neon);
+            arc1.position.set(0, 0.1, 0.15);
+            j1.add(arc1);
+
+            g.add(j1);
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            
+            // Animation for IK/FK demo
+            function animateBones() {
+                const t = clock.getElapsedTime();
+                a1.rotation.z = Math.sin(t*0.5)*0.5 + 0.5;
+                a2.rotation.z = Math.cos(t*0.5 + 1)*0.5 + 0.5;
+            }
+            animationMixers.push(animateBones);
+
+            return g;
+        }
+
+        // 5. Linear Motion
+        function createLinearMotionRobot() {
+            const g = new THREE.Group();
+            
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.2), MATS.base);
+            const a1 = new THREE.Group();
+            const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2, 0.2), MATS.arm);
+            arm1.position.y = 1;
+            a1.add(arm1);
+            g.add(base, a1);
+
+            const j2 = new THREE.Group();
+            j2.position.set(0, 2, 0);
+            const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.5, 0.15), MATS.arm);
+            arm2.position.y = 0.75;
+            j2.add(arm2);
+            a1.add(j2);
+
+            // Path Line
+            const geo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-1, 0.5, 1),
+                new THREE.Vector3(1, 0.5, 1)
+            ]);
+            const mat = new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 0.1, gapSize: 0.05 });
+            const line = new THREE.Line(geo, mat);
+            line.computeLineDistances();
+            g.add(line);
+
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.1), MATS.neon);
+            g.add(tip);
+
+            // Animate tip strictly along line
+            function anim() {
+                const t = (Math.sin(clock.getElapsedTime()*1.5)+1)/2; // 0 to 1
+                tip.position.set(-1 + t*2, 0.5, 1);
+                
+                // Inverse kinematics hack for visual only
+                a1.lookAt(tip.position);
+                a1.rotation.x = Math.PI/2;
+            }
+            animationMixers.push(anim);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 6. TCP (Tool Center Point)
+        function createTCPRobot() {
+            const g = new THREE.Group();
+
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.2), MATS.base);
+            const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.5, 0.3), MATS.arm);
+            arm1.position.set(0, 0.85, 0); arm1.rotation.z = 0.3;
+            const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 0.2), MATS.arm);
+            arm2.position.set(0.6, 1.8, 0); arm2.rotation.z = 1.0;
+            
+            const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1), MATS.silver);
+            flange.position.set(1.2, 2.15, 0); flange.rotation.z = 1.0;
+            
+            const tool = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.4), MATS.silver);
+            tool.position.set(1.4, 2.25, 0); tool.rotation.z = -Math.PI/2 + 1.0;
+
+            // The TCP Point glowing
+            const tcp = new THREE.Mesh(new THREE.SphereGeometry(0.08), MATS.redNeon);
+            tcp.position.set(1.6, 2.37, 0);
+            
+            // X/Y/Z arrows at TCP
+            const arrMatX = new THREE.LineBasicMaterial({color: 0xff0000});
+            const arrMatY = new THREE.LineBasicMaterial({color: 0x00ff00});
+            const arrMatZ = new THREE.LineBasicMaterial({color: 0x0000ff});
+            
+            g.add(base, arm1, arm2, flange, tool, tcp);
+
+            // Pulsing animation for TCP
+            function anim() {
+                const s = 1 + Math.sin(clock.getElapsedTime() * 4) * 0.2;
+                tcp.scale.set(s,s,s);
+            }
+            animationMixers.push(anim);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 7. Cycle Time & Blending
+        function createCycleTimeRobot() {
+            const g = new THREE.Group();
+            
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 0.2), MATS.base);
+            const arm = new THREE.Group();
+            const armMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2, 0.2), MATS.arm);
+            armMesh.position.y = 1;
+            arm.add(armMesh);
+            g.add(base, arm);
+
+            // Two points
+            const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), MATS.box);
+            p1.position.set(-1.5, 0.1, 1);
+            const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), MATS.box);
+            p2.position.set(1.5, 0.1, 1);
+            g.add(p1, p2);
+
+            // Blended Curve path (Arc)
+            const curve = new THREE.QuadraticBezierCurve3(
+                new THREE.Vector3(-1.5, 1, 1),
+                new THREE.Vector3(0, 1.5, 0.5),
+                new THREE.Vector3(1.5, 1, 1)
+            );
+            const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.02, 8), MATS.greenNeon);
+            g.add(tube);
+
+            // Animate moving between points
+            function anim(){
+                const t = (Math.sin(clock.getElapsedTime()*2) + 1)/2;
+                const pos = curve.getPoint(t);
+                arm.lookAt(pos);
+                arm.rotation.x -= Math.PI/2;
+            }
+            animationMixers.push(anim);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // 8. Work Cell Design (Safety, flow, reach)
+        function createWorkCellRobot() {
+            const g = new THREE.Group();
+
+            // Safety fencing
+            const fenceGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(4, 2, 4));
+            const fenceMat = new THREE.LineBasicMaterial({color: 0xef4444}); // Red safety bounds
+            const fence = new THREE.LineSegments(fenceGeo, fenceMat);
+            fence.position.y = 1;
+            g.add(fence);
+
+            // Reach envelope sphere (translucent)
+            const reach = new THREE.Mesh(
+                new THREE.SphereGeometry(1.5, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.1, wireframe: true })
+            );
+            reach.position.y = 0.5;
+            g.add(reach);
+
+            // Robot
+            const rb = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2), MATS.base);
+            const ra = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.2, 0.2), MATS.arm);
+            ra.position.set(0, 0.7, 0); ra.rotation.z = 0.4;
+            g.add(rb, ra);
+
+            // Material flow / Conveyor
+            const conv = new THREE.Mesh(new THREE.BoxGeometry(5, 0.2, 0.6), MATS.silver);
+            conv.position.set(0, 0.1, 1.5);
+            g.add(conv);
+
+            g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; } });
+            return g;
+        }
+
+        // Map function names to actual functions
+        const BUILDERS = {
+            createRobotIndustry40,
+            createDeltaRobot,
+            createRobotController,
+            createKinematicsRobot,
+            createLinearMotionRobot,
+            createTCPRobot,
+            createCycleTimeRobot,
+            createWorkCellRobot
+        };
+
+
+        // ═══════════════════════════════════════════════
+        //  UI & QUIZ LOGIC
+        // ═══════════════════════════════════════════════
+        function loadQuestion(index) {
+            answered = false;
+            document.getElementById('next-btn').classList.remove('show');
+            const q = QUESTIONS[index];
+            
+            // UI Set
+            document.getElementById('q-counter').innerText = `Question ${index + 1} / ${QUESTIONS.length}`;
+            document.getElementById('question-text').innerText = q.text;
+            
+            const pct = (index / QUESTIONS.length) * 100;
+            document.getElementById('progress-fill').style.width = pct + '%';
+
+            // Options
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(i, btn);
+                optsContainer.appendChild(btn);
+            });
+
+            // 3D Model Set
+            clearCurrentModel();
+            activeModelGroup = BUILDERS[q.modelFn]();
+            
+            // Spawn animation: start small and scale up
+            activeModelGroup.scale.set(0.01, 0.01, 0.01);
+            scene.add(activeModelGroup);
+
+            let s = 0;
+            function scaleAnim() {
+                s += (1.0 - s) * 0.1;
+                if(activeModelGroup) activeModelGroup.scale.set(s,s,s);
+            }
+            animationMixers.push(scaleAnim);
+            
+            // Optional camera reset to face the front differently
+            camera.position.set(-5 + Math.random()*2, 4, 7);
+            controls.target.set(0, 1, 0);
+        }
+
+        function selectOption(index, btnElement) {
+            if (answered) return;
+            answered = true;
+
+            const q = QUESTIONS[currentQuestion];
+            const isCorrect = (index === q.correct);
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            
+            if (isCorrect) {
+                btnElement.classList.add('correct');
+                score++;
+            } else {
+                btnElement.classList.add('wrong');
+                // Highlight correct one
+                allBtns[q.correct].classList.add('correct');
+            }
+
+            document.getElementById('next-btn').classList.add('show');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion >= QUESTIONS.length) {
+                showCompletion();
+            } else {
+                loadQuestion(currentQuestion);
+            }
+        }
+
+        function showCompletion() {
+            document.getElementById('progress-fill').style.width = '100%';
+            document.getElementById('quiz-content').style.display = 'none';
+            document.getElementById('completion-screen').style.display = 'block';
+            
+            clearInterval(timerInterval);
+            
+            const pct = Math.round((score / QUESTIONS.length) * 100);
+            const circle = document.getElementById('final-score');
+            circle.innerText = pct + '%';
+
+            const msg = document.getElementById('feedback-msg');
+            if (pct === 100) msg.innerText = "Perfect! You have an excellent foundation in robotics.";
+            else if (pct >= 70) msg.innerText = "Great job! A very solid understanding of robotics concepts.";
+            else if (pct >= 40) msg.innerText = "Good effort! Some areas to improve as you go through the course.";
+            else msg.innerText = "Don't worry! This course will teach you everything you need to know.";
+
+            // Final 3D celebration: clear and add rotating gold delta or industry bot
+            clearCurrentModel();
+            activeModelGroup = BUILDERS.createIndustryBotGold ? BUILDERS.createIndustryBotGold() : BUILDERS.createRobotIndustry40();
+            scene.add(activeModelGroup);
+            controls.autoRotateSpeed = 4.0; // speed up rotation
+        }
+
+        function finishQuiz() {
+            // Usually navigate back to course or close modal
+            // We'll post a message to parent if in iframe
+            window.parent.postMessage({ type: 'PRE_ASSESSMENT_COMPLETE', score }, '*');
+        }
+
+        function updateTimer() {
+            if(document.getElementById('completion-screen').style.display === 'block') return;
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const m = String(Math.floor(diff / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            document.getElementById('time-val').innerText = `${m}:${s}`;
+        }
+
+        // ═══════════════════════════════════════════════
+        //  MAIN RENDER LOOP
+        // ═══════════════════════════════════════════════
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            animationMixers.forEach(fn => fn());
+
+            renderer.render(scene, camera);
+        }
+
+        function updateCameraOffset() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            // Shift the viewport center right by 22% of the screen width.
+            // This practically moves the 3D model 22% to the left.
+            camera.setViewOffset(w, h, w * 0.22, 0, w, h);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            updateCameraOffset();
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // START!
+        initApp();
+
+    </script>
+</body>
+</html>

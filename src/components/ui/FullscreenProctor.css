@@ -1,0 +1,193 @@
+/* ═══════════════════════════════════════════
+ * FULLSCREEN PROCTOR — Assessment Mode
+ * ═══════════════════════════════════════════ */
+
+/* Consent overlay */
+.proctor-consent-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2000;
+  background: rgba(5, 5, 20, 0.95);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.proctor-consent-card {
+  max-width: 480px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(255, 109, 0, 0.15);
+  border-radius: 20px;
+  padding: 36px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,109,0,0.05);
+}
+
+.proctor-consent-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: rgba(255, 109, 0, 0.1);
+  color: var(--accent-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.proctor-consent-card h2 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.proctor-consent-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Rules */
+.proctor-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.proctor-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.proctor-rule svg { color: var(--accent-orange); flex-shrink: 0; }
+
+.proctor-consent-note {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.proctor-start-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 28px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff6d00, #ffd600);
+  color: #1a1a2e;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  transition: all 0.2s;
+}
+
+.proctor-start-btn:hover {
+  box-shadow: 0 0 24px rgba(255, 109, 0, 0.3);
+}
+
+/* Status bar */
+.proctor-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(255, 109, 0, 0.06);
+  border: 1px solid rgba(255, 109, 0, 0.1);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 0.7rem;
+  font-family: var(--font-heading);
+}
+
+.proctor-status-left,
+.proctor-status-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.proctor-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.proctor-indicator.active {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+}
+
+.proctor-indicator.warning {
+  background: #ff5050;
+  box-shadow: 0 0 8px rgba(255, 80, 80, 0.4);
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+.proctor-tab-warn { color: #ff5050; font-weight: 700; }
+
+.proctor-reenter-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 109, 0, 0.15);
+  color: var(--accent-orange);
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+/* Warning toast */
+.proctor-warning {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: #ff6b6b;
+  font-size: 0.78rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.proctor-warning button {
+  color: #ff6b6b;
+  opacity: 0.6;
+  margin-left: 8px;
+}
+
+.proctor-warning button:hover { opacity: 1; }
+
+/* Light mode */
+[data-theme="light"] .proctor-consent-overlay { background: rgba(240,240,255,0.95); }
+[data-theme="light"] .proctor-consent-card {
+  background: rgba(255,255,255,0.98);
+  border-color: rgba(255, 109, 0, 0.2);
+}
+

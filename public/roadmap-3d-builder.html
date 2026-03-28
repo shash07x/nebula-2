@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Interactive Roadmap Builder</title>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border-subtle: #e2e8f0;
+            --text-main: #0f172a;
+            --text-secondary: #475569;
+            --accent-blue: #2563eb;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: var(--font-main);
+            background: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- UI Overlay --- */
+        #ui-panel {
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+            position: relative;
+            transition: opacity 0.5s ease;
+        }
+        
+        #ui-panel-content {
+            width: 100%;
+            max-width: 800px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            margin: 40px 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-height: calc(100vh - 80px);
+        }
+
+        #ui-panel.hidden {
+            display: none;
+        }
+
+        .panel-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .panel-header h1 {
+            font-size: 1.4rem;
+            margin: 0 0 8px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .panel-header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+
+        /* Roadmap Nodes */
+        .roadmap-container {
+            position: relative;
+            padding: 40px 0;
+            margin: 0 auto;
+            max-width: 700px;
+        }
+
+        .path-line {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            bottom: 20px;
+            width: 4px;
+            background: var(--border-subtle);
+            border-radius: 2px;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        .node-wrapper {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 60px;
+            opacity: 0.4;
+            pointer-events: none;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .node-wrapper.active, .node-wrapper.completed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Tree Zigzag Layout */
+        .node-wrapper:nth-child(odd) .node-content {
+            margin-right: calc(50% + 60px);
+        }
+        .node-wrapper:nth-child(even) .node-content {
+            margin-left: calc(50% + 60px);
+        }
+
+        .node-circle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 3px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .node-wrapper.active .node-circle {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .node-wrapper.completed .node-circle {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+        }
+
+        .node-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+
+        .node-wrapper.active .node-content {
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
+        }
+
+        .node-tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--accent-blue);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .node-wrapper.completed .node-tag { color: var(--accent-green); }
+
+        .node-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0 0 12px;
+        }
+
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            text-align: left;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .option-btn.correct { background: rgba(16, 185, 129, 0.1); border-color: var(--accent-green); color: #059669; }
+        .option-btn.incorrect { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #b91c1c; }
+
+        .feedback {
+            font-size: 0.8rem;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: none;
+        }
+        .feedback.show { display: block; }
+        .feedback.success { background: rgba(16, 185, 129, 0.1); color: #059669; }
+        .feedback.error { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+
+        .action-btn {
+            display: none;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+        }
+        .action-btn.show { display: block; }
+
+        /* --- 3D Canvas Container --- */
+        #canvas-container {
+            flex: 1;
+            position: absolute;
+            inset: 0;
+            display: none;
+            overflow: hidden;
+        }
+
+        /* 3D Scene Labels */
+        #scene-labels {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 4;
+            overflow: hidden;
+        }
+
+        .scene-label {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+            transform: translate(-50%, -100%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .scene-label.visible {
+            opacity: 1;
+        }
+        
+        /* Small pointer line from label down */
+        .scene-label::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 8px;
+            background: rgba(56, 189, 248, 0.8);
+        }
+
+        /* Top HUD */
+        #hud {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(8px);
+            padding: 12px 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.4);
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        /* Bottom Right Finish Button */
+        #success-overlay {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #success-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        #success-overlay button {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #success-overlay button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(14, 165, 233, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left UI Panel (Now Centered) -->
+    <div id="ui-panel">
+        <div id="ui-panel-content">
+            <div class="panel-header" id="intro-screen">
+                <h1 style="text-align:center;">Real-World Case Study</h1>
+                <p style="text-align:center; font-size: 1rem; padding: 0 20px;">You are the Lead Systems Integrator at Apex Motors. Management wants to replace a manual welding station with an automated robotic cell to increase throughput by 30%. You must make critical decisions at each phase of the integration roadmap.</p>
+                <button class="action-btn show" id="start-btn" onclick="startScenario()">Start Roadmap Quiz</button>
+            </div>
+
+            <div class="scroll-container" id="roadmap-scroll" style="display:none;">
+                <div class="roadmap-container">
+                    <div class="path-line"></div>
+                    <!-- Nodes injected here -->
+                    <div id="nodes-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right 3D Canvas -->
+    <div id="canvas-container">
+        <!-- Overlay container for labels -->
+        <div id="scene-labels"></div>
+
+        <div id="hud">Phase 1 / 4</div>
+        <div id="success-overlay">
+            <button onclick="finishModule()">
+                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i> Return to Module
+            </button>
+        </div>
+    </div>
+
+<script>
+    function finishModule() {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'ROADMAP_COMPLETE', score: 100 }, '*');
+        } else {
+            alert('Roadmap completed! (Run inside Nebula to navigate automatically)');
+        }
+    }
+    // --- Quiz Data ---
+    const roadmapPhases = [
+        {
+            milestone: "PHASE 1: Planning",
+            title: "Selecting the Right Robot Architecture",
+            options: [
+                { text: "SCARA Robot", correct: false },
+                { text: "6-Axis Articulated Robot", correct: true },
+                { text: "Delta Robot", correct: false }
+            ],
+            feedback: "Correct! A 6-axis articulated robot provides the necessary dexterity for complex automotive frame welding."
+        },
+        {
+            milestone: "PHASE 2: Payload Analysis",
+            title: "Calculating the Total Tooling Payload",
+            options: [
+                { text: "Ignore the weight of the cables", correct: false },
+                { text: "Add welding gun, cables, and safety factor", correct: true },
+                { text: "Only calculate welding gun weight", correct: false }
+            ],
+            feedback: "Correct. Total payload must include the end-effector, dress packs, and structural safety margin."
+        },
+        {
+            milestone: "PHASE 3: Safety Integration",
+            title: "Implementing Cell Defenses",
+            options: [
+                { text: "Laser scanners and light curtains", correct: true },
+                { text: "A painted line on the floor", correct: false },
+                { text: "Warning signs only", correct: false }
+            ],
+            feedback: "Correct. Active safety devices ensure the robot halts if a human enters the cell."
+        },
+        {
+            milestone: "PHASE 4: Programming",
+            title: "Trajectory Optimization",
+            options: [
+                { text: "Program point-to-point without blending", correct: false },
+                { text: "Use continuous path blending for smooth curves", correct: true },
+                { text: "Maximum speed for every single motion", correct: false }
+            ],
+            feedback: "Correct. Continuous path blending prevents sudden stops, reducing cycle time and wear."
+        }
+    ];
+
+    let currentPhase = -1; // -1 = intro
+    
+    // --- UI Logic ---
+    const nodesContainer = document.getElementById('nodes-container');
+    const finishBtn = document.getElementById('finish-btn');
+    const hud = document.getElementById('hud');
+
+    function startScenario() {
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('roadmap-scroll').style.display = 'block';
+        hud.style.display = 'block';
+        currentPhase = 0;
+        renderNodes();
+    }
+
+    function renderNodes() {
+        nodesContainer.innerHTML = '';
+        hud.textContent = `Phase ${currentPhase + 1} / 4`;
+        
+        roadmapPhases.forEach((p, index) => {
+            const isCompleted = index < currentPhase;
+            const isActive = index === currentPhase;
+            
+            let statusClass = '';
+            if (isCompleted) statusClass = 'completed';
+            else if (isActive) statusClass = 'active';
+
+            const nodeHtml = `
+                <div class="node-wrapper ${statusClass}" id="node-${index}">
+                    <div class="node-circle">
+                        ${isCompleted ? '<i data-lucide="check" style="width: 14px;"></i>' : index + 1}
+                    </div>
+                    <div class="node-content">
+                        <span class="node-tag">${p.milestone}</span>
+                        <h3 class="node-title">${p.title}</h3>
+                        <div class="options-list">
+                            ${p.options.map((opt, optIdx) => `
+                                <button class="option-btn" 
+                                    ${isCompleted ? 'disabled' : ''} 
+                                    ${isCompleted && opt.correct ? 'style="border-color: #10b981; background: rgba(16, 185, 129, 0.1); color: #059669;"' : ''}
+                                    onclick="handleAnswerSelection(${index}, ${optIdx}, this)">
+                                    ${opt.text}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="feedback ${isCompleted ? 'show success' : ''}" id="feedback-${index}">
+                            ${isCompleted ? p.feedback : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            nodesContainer.insertAdjacentHTML('beforeend', nodeHtml);
+        });
+        
+        if (currentPhase < roadmapPhases.length) {
+            setTimeout(() => {
+                document.getElementById(`node-${currentPhase}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+        
+        lucide.createIcons();
+    }
+
+    window.handleAnswerSelection = function(phaseIdx, optIdx, btnNode) {
+        if (phaseIdx !== currentPhase) return;
+        
+        const phase = roadmapPhases[phaseIdx];
+        const isCorrect = phase.options[optIdx].correct;
+        const parentNode = document.getElementById(`node-${phaseIdx}`);
+        const allBtns = parentNode.querySelectorAll('.option-btn');
+        const feedback = document.getElementById(`feedback-${phaseIdx}`);
+
+        allBtns.forEach(b => b.disabled = true);
+
+        if (isCorrect) {
+            btnNode.classList.add('correct');
+            feedback.textContent = phase.feedback;
+            feedback.className = 'feedback show success';
+
+            if (currentPhase < roadmapPhases.length - 1) {
+                // Auto-advance to the next question
+                setTimeout(() => {
+                    advancePhase();
+                }, 1500);
+            } else {
+                // Auto-advance directly to the 3D Workcell Environment
+                setTimeout(() => {
+                    enterFinalEnvironment();
+                }, 1500);
+            }
+
+        } else {
+            btnNode.classList.add('incorrect');
+            feedback.textContent = "Incorrect decision. Review the scenario and try again.";
+            feedback.className = 'feedback show error';
+            
+            setTimeout(() => {
+                allBtns.forEach(b => {
+                    b.disabled = false;
+                    b.classList.remove('incorrect');
+                });
+                feedback.className = 'feedback';
+            }, 1500);
+        }
+    }
+
+    window.advancePhase = function() {
+        currentPhase++;
+        renderNodes();
+    }
+
+
+    // ==========================================
+    // --- THREE.JS LOGIC ---
+    // ==========================================
+    let scene, camera, renderer, controls;
+    let robotGroup, armGroup, wristGroup, fenceGroup, conveyorGroup, toolGroup, pathLine;
+    let clock;
+    let labelObjects = []; // Stores attached html labels
+    
+    // Materials
+    const matRobotMetal = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.6, roughness: 0.4 });
+    const matRobotOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.3, roughness: 0.5 });
+    const matJoints = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+    const matTool = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.9, roughness: 0.1 });
+    const matFloor = new THREE.MeshStandardMaterial({ color: 0xe2e8f0 });
+    const matGlass = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, transmission: 0.5, opacity: 0.3, transparent: true, roughness: 0.1 });
+    const matYellowAlert = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
+
+    function initScene() {
+        const container = document.getElementById('canvas-container');
+        
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color('#f8fafc');
+        scene.fog = new THREE.Fog('#f8fafc', 10, 50);
+
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        // Initial view looking at empty floor
+        camera.position.set(5, 5, 5);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 1, 0);
+        // Initially freeze controls so user focuses on Quiz
+        controls.enabled = false;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // Grid & Floor
+        const gridHelper = new THREE.GridHelper(20, 20, 0x94a3b8, 0xe2e8f0);
+        scene.add(gridHelper);
+
+        const floorGeo = new THREE.PlaneGeometry(20, 20);
+        const floor = new THREE.Mesh(floorGeo, matFloor);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        // move floor slightly below grid to prevent Z-fighting
+        floor.position.y = -0.01;
+        scene.add(floor);
+
+        // Core Group holds the entire robot
+        robotGroup = new THREE.Group();
+        scene.add(robotGroup);
+
+        clock = new THREE.Clock();
+
+        window.addEventListener('resize', onWindowResize);
+        animate();
+    }
+
+    function createRobotBase() {
+        // Base Cylinder
+        const baseGeo = new THREE.CylinderGeometry(0.8, 1, 0.5, 32);
+        const base = new THREE.Mesh(baseGeo, matRobotMetal);
+        base.position.y = 0.25;
+        base.castShadow = true;
+        base.receiveShadow = true;
+        robotGroup.add(base);
+
+        // Waist Joint
+        const waistGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 32);
+        const waist = new THREE.Mesh(waistGeo, matJoints);
+        waist.position.y = 0.7;
+        waist.castShadow = true;
+        robotGroup.add(waist);
+
+        // Shoulder joint
+        const shoulderGeo = new THREE.SphereGeometry(0.5, 32, 32);
+        const shoulder = new THREE.Mesh(shoulderGeo, matRobotOrange);
+        shoulder.position.y = 1.1;
+        shoulder.castShadow = true;
+        robotGroup.add(shoulder);
+
+        // Arm 1 (Bicep)
+        armGroup = new THREE.Group();
+        armGroup.position.set(0, 1.1, 0); // attached to shoulder height
+        robotGroup.add(armGroup);
+
+        const armGeo = new THREE.CylinderGeometry(0.2, 0.25, 1.5, 16);
+        const arm = new THREE.Mesh(armGeo, matRobotOrange);
+        arm.position.y = 0.75; // center is half height
+        arm.castShadow = true;
+        armGroup.add(arm);
+
+        // Elbow joint
+        const elbowGeo = new THREE.SphereGeometry(0.35, 32, 32);
+        const elbow = new THREE.Mesh(elbowGeo, matJoints);
+        elbow.position.y = 1.5;
+        elbow.castShadow = true;
+        armGroup.add(elbow);
+
+        // Forearm
+        wristGroup = new THREE.Group();
+        wristGroup.position.set(0, 1.5, 0);
+        armGroup.add(wristGroup);
+
+        const forearmGeo = new THREE.CylinderGeometry(0.15, 0.2, 1.2, 16);
+        const forearm = new THREE.Mesh(forearmGeo, matRobotOrange);
+        forearm.position.y = 0.6;
+        forearm.castShadow = true;
+        wristGroup.add(forearm);
+        
+        // Initial Pose
+        armGroup.rotation.z = Math.PI / 6;
+        wristGroup.rotation.z = -Math.PI / 3;
+
+        // Pop in animation scale
+        robotGroup.scale.set(0.01, 0.01, 0.01);
+        new TWEEN.Tween(robotGroup.scale).to({ x: 1, y: 1, z: 1 }, 1000).easing(TWEEN.Easing.Bounce.Out).start();
+    }
+
+    function addWeldingTool() {
+        toolGroup = new THREE.Group();
+        toolGroup.position.set(0, 1.2, 0); // Top of forearm
+        wristGroup.add(toolGroup);
+
+        // Wrist ball
+        const wristBallGeo = new THREE.SphereGeometry(0.2, 32, 32);
+        const wristBall = new THREE.Mesh(wristBallGeo, matJoints);
+        wristBall.castShadow = true;
+        toolGroup.add(wristBall);
+
+        // Welding Gun body (Cone)
+        const toolGeo = new THREE.ConeGeometry(0.15, 0.6, 16);
+        const toolMesh = new THREE.Mesh(toolGeo, matTool);
+        toolMesh.position.set(0, 0.3, 0);
+        // Tilt tool
+        toolMesh.rotation.z = Math.PI / 4;
+        toolMesh.castShadow = true;
+        toolGroup.add(toolMesh);
+
+        // Thick Cables
+        const spline = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 0.6, 0.1),
+            new THREE.Vector3(0.5, 0, 0.2),
+            new THREE.Vector3(0.2, -1, 0)
+        ]);
+        const tubeGeo = new THREE.TubeGeometry(spline, 20, 0.05, 8, false);
+        const cableMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+        const cable = new THREE.Mesh(tubeGeo, cableMat);
+        toolGroup.add(cable);
+
+        // Pop in animation
+        toolGroup.scale.set(0, 0, 0);
+        new TWEEN.Tween(toolGroup.scale).to({ x: 1, y: 1, z: 1 }, 800).easing(TWEEN.Easing.Elastic.Out).start();
+    }
+
+    function addSafetyFence() {
+        fenceGroup = new THREE.Group();
+        scene.add(fenceGroup);
+
+        // Fence posts and glass
+        const fenceSize = 4;
+        const pts = [
+            [-fenceSize, fenceSize], [fenceSize, fenceSize],
+            [fenceSize, -fenceSize], [-fenceSize, -fenceSize]
+        ];
+
+        // 3 walls (leave front open)
+        for (let i=0; i<3; i++) {
+            const p1 = pts[i];
+            const p2 = pts[i+1];
+            
+            // Wall center
+            const cx = (p1[0] + p2[0]) / 2;
+            const cz = (p1[1] + p2[1]) / 2;
+            const len = Math.sqrt(Math.pow(p2[0]-p1[0], 2) + Math.pow(p2[1]-p1[1], 2));
+
+            const wallGeo = new THREE.BoxGeometry(len, 2, 0.1);
+            const wall = new THREE.Mesh(wallGeo, matGlass);
+            wall.position.set(cx, 1, cz);
+            if (p1[0] === p2[0]) wall.rotation.y = Math.PI/2;
+            
+            fenceGroup.add(wall);
+        }
+
+        // Add 4 Yellow Corner Posts
+        for(let i=0; i<4; i++) {
+            const postGeo = new THREE.BoxGeometry(0.2, 2.2, 0.2);
+            const post = new THREE.Mesh(postGeo, matYellowAlert);
+            post.position.set(pts[i][0], 1.1, pts[i][1]);
+            post.castShadow = true;
+            fenceGroup.add(post);
+        }
+
+        // Add Laser Scanner in front (open side)
+        const scannerGeo = new THREE.CylinderGeometry(0.1, 0.15, 0.4, 16);
+        const scanner = new THREE.Mesh(scannerGeo, matYellowAlert);
+        scanner.position.set(-fenceSize + 0.5, 0.2, -fenceSize);
+        scanner.castShadow = true;
+        fenceGroup.add(scanner);
+
+        fenceGroup.position.y = -2; // Start below floor
+        new TWEEN.Tween(fenceGroup.position).to({ y: 0 }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+    }
+
+    function animateRobotMotion() {
+        // Add Conveyor
+        conveyorGroup = new THREE.Group();
+        scene.add(conveyorGroup);
+
+        const convBaseGeo = new THREE.BoxGeometry(1.5, 0.6, 5);
+        const convBase = new THREE.Mesh(convBaseGeo, matJoints);
+        convBase.position.set(2.5, 0.3, 0);
+        convBase.receiveShadow = true;
+        convBase.castShadow = true;
+        conveyorGroup.add(convBase);
+
+        // Add Workpiece
+        const pieceGeo = new THREE.BoxGeometry(0.6, 0.4, 0.8);
+        const piece = new THREE.Mesh(pieceGeo, new THREE.MeshStandardMaterial({color: 0x94a3b8}));
+        piece.position.set(2.5, 0.8, 0);
+        piece.castShadow = true;
+        conveyorGroup.add(piece);
+
+        conveyorGroup.position.y = -1;
+        new TWEEN.Tween(conveyorGroup.position).to({ y: 0 }, 500).start();
+
+        // Draw Motion Path
+        const curve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(0, 2.7, 0), // Start (tool tip)
+            new THREE.Vector3(1.2, 3, 0), // Control point
+            new THREE.Vector3(2.5, 1.2, 0) // End (workpiece)
+        );
+
+        const points = curve.getPoints( 20 );
+        const geometry = new THREE.BufferGeometry().setFromPoints( points );
+        const material = new THREE.LineBasicMaterial( { color: 0x06b6d4, linewidth: 2 } );
+
+        pathLine = new THREE.Line( geometry, material );
+        scene.add( pathLine );
+
+        // Animate robot to follow this (simulated by rotating joints over time in animate loop)
+        robotGroup.userData.animating = true;
+    }
+
+    // --- Labels & Switch Logic ---
+    function addSceneLabel(text, attachObject, offset) {
+        const labelsContainer = document.getElementById('scene-labels');
+        const div = document.createElement('div');
+        div.className = 'scene-label';
+        div.textContent = text;
+        labelsContainer.appendChild(div);
+
+        labelObjects.push({
+            element: div,
+            object: attachObject,
+            offset: offset,
+            visible: true
+        });
+
+        // Trigger fade in
+        setTimeout(() => div.classList.add('visible'), 50);
+    }
+
+    function updateLabels() {
+        const width = renderer.domElement.clientWidth;
+        const height = renderer.domElement.clientHeight;
+
+        labelObjects.forEach(l => {
+            if(!l.visible) return;
+
+            // Get world position of the attached object
+            const worldPos = new THREE.Vector3();
+            l.object.getWorldPosition(worldPos);
+            
+            // Add local offset
+            worldPos.add(l.offset);
+
+            // Project to 2D Screen Space
+            const projected = worldPos.clone().project(camera);
+
+            // Check if behind camera
+            if(projected.z > 1) {
+                l.element.style.display = 'none';
+                return;
+            }
+
+            // Map to Screen CSS Coords
+            const x = (projected.x * .5 + .5) * width;
+            const y = (projected.y * -.5 + .5) * height;
+
+            l.element.style.display = 'block';
+            l.element.style.left = `${x}px`;
+            l.element.style.top = `${y}px`;
+        });
+    }
+
+    window.buildRobotStep = function(phaseIdx) {
+        switch(phaseIdx) {
+            case 0:
+                createRobotBase();
+                new TWEEN.Tween(camera.position).to({ x: 5, y: 3, z: 5 }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+                hud.textContent = "Phase 1: Architecture Built";
+                addSceneLabel("6-Axis Articulated Robot", robotGroup, new THREE.Vector3(0, 1.8, 0));
+                break;
+            case 1:
+                addWeldingTool();
+                new TWEEN.Tween(camera.position).to({ x: 4, y: 4, z: 6 }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+                hud.textContent = "Phase 2: Payload Configured";
+                // Wait for animation to finish before adding label
+                setTimeout(() => addSceneLabel("Total Tooling Payload", toolGroup, new THREE.Vector3(0, 0.8, 0)), 800);
+                break;
+            case 2:
+                addSafetyFence();
+                new TWEEN.Tween(camera.position).to({ x: 7, y: 5, z: 7 }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+                hud.textContent = "Phase 3: Cell Defenses Active";
+                setTimeout(() => addSceneLabel("Active Laser & Curtains", fenceGroup, new THREE.Vector3(-3.5, 2.5, -3.5)), 1000);
+                break;
+            case 3:
+                animateRobotMotion();
+                new TWEEN.Tween(camera.position).to({ x: 6, y: 4, z: -6 }, 1500).easing(TWEEN.Easing.Quadratic.Out).start();
+                hud.textContent = "Phase 4: Motion Trajectory Optimized";
+                controls.autoRotate = true;
+                setTimeout(() => addSceneLabel("Continuous Path Blending", conveyorGroup, new THREE.Vector3(2.5, 2, 0)), 500);
+                break;
+        }
+    }
+
+    window.enterFinalEnvironment = function() {
+        // Hide UI Panel and show Canvas
+        const uiPanel = document.getElementById('ui-panel');
+        uiPanel.classList.add('hidden');
+        
+        const canvasContainer = document.getElementById('canvas-container');
+        canvasContainer.style.display = 'block';
+        
+        // Initialize 3D Scene now
+        initScene();
+
+        // Start Assembly Sequence
+        hud.style.display = 'block';
+        hud.textContent = "Initializing Workcell Assembly...";
+        
+        setTimeout(() => buildRobotStep(0), 1000);
+        setTimeout(() => buildRobotStep(1), 3000);
+        setTimeout(() => buildRobotStep(2), 5000);
+        setTimeout(() => buildRobotStep(3), 7000);
+
+        // Show success overlay
+        setTimeout(() => {
+            document.getElementById('success-overlay').classList.add('show');
+            hud.style.display = 'none';
+        }, 10000);
+    }
+
+    // Include simple TWEEN library inline (since CDN wasn't requested but is very useful for smooth Threejs animation)
+    // Minimal TWEEN polyfill
+    var TWEEN = TWEEN || (function() {
+        var _tweens = [];
+        return {
+            getAll: function() { return _tweens; },
+            removeAll: function() { _tweens = []; },
+            add: function(tween) { _tweens.push(tween); },
+            remove: function(tween) {
+                var i = _tweens.indexOf(tween);
+                if (i !== -1) _tweens.splice(i, 1);
+            },
+            update: function(time, preserve) {
+                if (_tweens.length === 0) return false;
+                var i = 0;
+                time = time !== undefined ? time : window.performance.now();
+                while (i < _tweens.length) {
+                    if (_tweens[i].update(time) || preserve) i++;
+                    else _tweens.splice(i, 1);
+                }
+                return true;
+            }
+        };
+    })();
+    TWEEN.Easing = {
+        Quadratic: { Out: function (k) { return k * (2 - k); }},
+        Cubic: { InOut: function (k) { return (k *= 2) < 1 ? 0.5 * k * k * k : 0.5 * ((k -= 2) * k * k + 2); }},
+        Bounce: { Out: function(k) { if(k<1/2.75){ return 7.5625*k*k; } else if(k<2/2.75){ return 7.5625*(k-=1.5/2.75)*k + 0.75; } else if(k<2.5/2.75){ return 7.5625*(k-=2.25/2.75)*k + 0.9375; } else { return 7.5625*(k-=2.625/2.75)*k + 0.984375; } } },
+        Elastic: { Out: function(k) { if(k===0)return 0; if(k===1)return 1; return Math.pow(2, -10*k)*Math.sin((k-0.1)*5*Math.PI) + 1; } }
+    };
+    TWEEN.Tween = function(object) {
+        var _object = object;
+        var _valuesStart = {};
+        var _valuesEnd = {};
+        var _duration = 1000;
+        var _delayTime = 0;
+        var _startTime = null;
+        var _easingFunction = function(k) { return k; };
+        this.to = function(properties, duration) { _valuesEnd = properties; _duration = duration !== undefined ? duration : 1000; return this; };
+        this.start = function(time) {
+            TWEEN.add(this);
+            _startTime = time !== undefined ? time : window.performance.now() + _delayTime;
+            for (var property in _valuesEnd) { _valuesStart[property] = _object[property]; }
+            return this;
+        };
+        this.easing = function(easing) { _easingFunction = easing; return this; };
+        this.update = function(time) {
+            var elapsed = (time - _startTime) / _duration;
+            elapsed = elapsed > 1 ? 1 : elapsed;
+            var value = _easingFunction(elapsed);
+            for (var property in _valuesEnd) {
+                var start = _valuesStart[property] || 0;
+                var end = _valuesEnd[property];
+                _object[property] = start + (end - start) * value;
+            }
+            if (elapsed === 1) return false;
+            return true;
+        };
+    };
+
+    function onWindowResize() {
+        const container = document.getElementById('canvas-container');
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        TWEEN.update();
+
+        const time = clock.getElapsedTime();
+
+        // Simulate robot subtle breathing if base is built
+        if (robotGroup && !robotGroup.userData.animating) {
+            //robotGroup.rotation.y = Math.sin(time * 0.5) * 0.1;
+        }
+
+        // Simulate sweeping motion in Phase 4
+        if (robotGroup && robotGroup.userData.animating) {
+            robotGroup.rotation.y = Math.sin(time) * 0.5;
+            armGroup.rotation.z = Math.PI/6 + Math.sin(time*2)*0.2;
+            wristGroup.rotation.z = -Math.PI/3 + Math.sin(time*2)*0.3;
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+        
+        // Update floating HTML labels
+        updateLabels();
+    }
+
+    // Boot
+    lucide.createIcons();
+    // initScene() is now called when entering final environment
+
+</script>
+</body>
+</html>
