@@ -37,7 +37,7 @@ export default function Sidebar() {
       >
         {/* Logo + Theme Toggle */}
         <div className="sidebar-logo">
-          <img src="/nebula-logo.png" alt="Nebula" className="sidebar-logo-icon" />
+          <img src="./nebula-logo.png" alt="Nebula" className="sidebar-logo-icon" />
           <AnimatePresence>
             {!collapsed && (
               <motion.span

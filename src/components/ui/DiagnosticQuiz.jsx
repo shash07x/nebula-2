@@ -54,7 +54,7 @@ export default function DiagnosticQuiz({ playerName, onComplete }) {
     >
       {loading && <div style={{ color: 'white', position: 'absolute' }}>Loading 3D Assessment...</div>}
       <iframe
-        src="/pre-assessment-3d.html"
+        src="./pre-assessment-3d.html"
         title="3D Pre-Assessment Assessment"
         style={{ width: '100vw', height: '100vh', border: 'none', display: loading ? 'none' : 'block' }}
         onLoad={() => setLoading(false)}
