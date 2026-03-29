@@ -28,7 +28,6 @@ export default function Dashboard() {
 
   const handleDiagnosticComplete = (track, startModuleId) => {
     setDiagnosticComplete(track, startModuleId);
-    alert("Quiz Completed. Returning to course...");
     navigate('/dashboard');
   };
 
