@@ -716,7 +716,7 @@ export default function ModulePlayer() {
         <p className="practice-desc">Explore 6 robot types with interactive joint controls — rotate, zoom, and adjust each axis in real time.</p>
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#0a0a0a' }}>
           <iframe
-            src="./robot-types.html"
+            src={`${import.meta.env.BASE_URL}robot-types.html`}
             title="Robot Types & Familiarization"
             style={{ width: '100%', height: 550, border: 'none', display: 'block' }}
             allow="accelerometer; gyroscope; fullscreen"
@@ -831,7 +831,7 @@ export default function ModulePlayer() {
         </p>
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#0a0f1a' }}>
           <iframe
-            src="./Robot_Component_Match_3D.html"
+            src={`${import.meta.env.BASE_URL}Robot_Component_Match_3D.html`}
             title="Interactive Component Match"
             style={{ width: '100%', height: 600, border: 'none', borderRadius: 8 }}
             allow="accelerometer; gyroscope; fullscreen"
@@ -847,7 +847,7 @@ export default function ModulePlayer() {
           Complete hands-on challenges across 3 difficulty levels — identify robot parts, select grippers, and design robotic cell layouts in an interactive 3D environment.
         </p>
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#0a0a0a', marginTop: 16 }}>
-          <iframe src="./robotics-challenge.html" title="Robotics Challenge" style={{ width: '100%', height: 600, border: 'none' }} allow="accelerometer; gyroscope; fullscreen" allowFullScreen />
+          <iframe src={`${import.meta.env.BASE_URL}robotics-challenge.html`} title="Robotics Challenge" style={{ width: '100%', height: 600, border: 'none' }} allow="accelerometer; gyroscope; fullscreen" allowFullScreen />
         </div>
       </GlassCard>
 
@@ -865,7 +865,7 @@ export default function ModulePlayer() {
           Match each 3D robot model on the left with its correct name on the right. Click a model, then click the matching label to draw a connection line.
         </p>
         <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#0a0a0a', marginTop: 16 }}>
-          <iframe src="./match-the-following.html" title="Match the Following" style={{ width: '100%', height: 700, border: 'none' }} allow="accelerometer; gyroscope; fullscreen" allowFullScreen />
+          <iframe src={`${import.meta.env.BASE_URL}match-the-following.html`} title="Match the Following" style={{ width: '100%', height: 700, border: 'none' }} allow="accelerometer; gyroscope; fullscreen" allowFullScreen />
         </div>
       </GlassCard>
     </div>
@@ -881,7 +881,7 @@ export default function ModulePlayer() {
       
       <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#0a0f1a', height: 'calc(100vh - 200px)', minHeight: 700 }}>
         <iframe 
-          src="./roadmap-3d-builder.html"
+          src={`${import.meta.env.BASE_URL}roadmap-3d-builder.html`}
           title="Interactive Roadmap"
           style={{ width: '100%', height: 'calc(100vh - 120px)', border: 'none', display: 'block' }}
           allow="accelerometer; gyroscope; fullscreen"

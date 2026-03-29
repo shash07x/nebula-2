@@ -135,7 +135,7 @@ export default function NotesPanel({ isOpen, onClose }) {
       generatePDF(canvas.toDataURL('image/png'));
     };
     img.onerror = () => generatePDF(null);
-    img.src = './nebula-logo.png';
+    img.src = `${import.meta.env.BASE_URL}nebula-logo.png`;
   };
 
   const filtered = notes
@@ -243,7 +243,7 @@ export default function NotesPanel({ isOpen, onClose }) {
               />
               {/* Nebula KnowLab watermark */}
               <div className="notes-watermark">
-                <img src="./nebula-logo.png" alt="" className="notes-watermark-img" />
+                <img src={`${import.meta.env.BASE_URL}nebula-logo.png`} alt="" className="notes-watermark-img" />
                 <span className="notes-watermark-text">Nebula KnowLab™</span>
               </div>
               <div className="notes-editor-meta">

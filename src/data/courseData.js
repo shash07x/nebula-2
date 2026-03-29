@@ -7,7 +7,7 @@ export const PHASES = {
     goal: 'I can understand robotics.',
     color: '#4f8cff',
     gradient: 'linear-gradient(135deg, #4f8cff, #00e5ff)',
-    image: './hero_spark.png',
+    image: `${import.meta.env.BASE_URL}hero_spark.png`,
     description: 'Build curiosity and confidence with foundational robotics concepts — robot types, components, and sensor systems.',
     outcomes: ['Understand what robots are and their history', 'Identify robot components and architecture', 'Recognize sensors used in robotics'],
     mode: 'theory',
@@ -20,7 +20,7 @@ export const PHASES = {
     goal: 'I can build and program a robot.',
     color: '#a855f7',
     gradient: 'linear-gradient(135deg, #a855f7, #e040fb)',
-    image: './hero_build.png',
+    image: `${import.meta.env.BASE_URL}hero_build.png`,
     description: 'Master practical skills — actuators, kinematics, programming, and control systems for real robot applications.',
     outcomes: ['Work with actuators and motion systems', 'Apply forward and inverse kinematics', 'Program basic robot behaviors', 'Understand control system principles'],
     mode: 'practical',
@@ -33,7 +33,7 @@ export const PHASES = {
     goal: 'I can apply robotics professionally.',
     color: '#ff6d00',
     gradient: 'linear-gradient(135deg, #ff6d00, #ffd600)',
-    image: './hero_master.png',
+    image: `${import.meta.env.BASE_URL}hero_master.png`,
     description: 'Apply advanced skills to real-world scenarios — industry applications, task automation, and a capstone robotics project.',
     outcomes: ['Analyze robot applications across industries', 'Design robot task planning systems', 'Build a complete robotics project'],
     mode: 'advanced',
@@ -243,7 +243,7 @@ export const QUIZ_QUESTIONS = {
   'mod-1': [
     {
       question: 'Look at the image above. What distinguishes a robot from simple automation?',
-      image: './quiz-robot-types.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-types.png`,
       imageCaption: 'Different types of industrial robots used across manufacturing',
       options: ['Robots are always humanoid in shape', 'Robots can be reprogrammed for different tasks', 'Robots must have wheels for movement', 'Robots only work in factories'],
       correct: 1,
@@ -251,7 +251,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Observe the robot types shown. Which field was the first to adopt industrial robots?',
-      image: './quiz-robot-types.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-types.png`,
       imageCaption: 'Industrial robots in various configurations',
       options: ['Healthcare', 'Agriculture', 'Automotive manufacturing', 'Food processing'],
       correct: 2,
@@ -259,7 +259,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Looking at the articulated robot arm, what does "degrees of freedom" refer to?',
-      image: './quiz-robot-types.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-types.png`,
       imageCaption: 'Notice how different robot types have different joint configurations',
       options: ['How many tasks a robot can do', 'The number of independent movements a robot can make', 'The cost tiers available', 'The number of sensors installed'],
       correct: 1,
@@ -269,7 +269,7 @@ export const QUIZ_QUESTIONS = {
   'mod-2': [
     {
       question: 'Study the labeled robot diagram. What is the primary function of a robot controller?',
-      image: './quiz-robot-components.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-components.png`,
       imageCaption: 'Internal components of a robot arm — controller, motors, encoders, and end effector',
       options: ['Supply electrical power', 'Process commands and coordinate motion', 'Hold the workpiece', 'Provide safety fencing'],
       correct: 1,
@@ -277,7 +277,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'From the component diagram, which converts electrical energy into mechanical motion?',
-      image: './quiz-robot-components.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-components.png`,
       imageCaption: 'Robot architecture showing the relationship between controller, motors, and sensors',
       options: ['Sensor', 'Actuator/Motor', 'Controller', 'End effector'],
       correct: 1,
@@ -285,7 +285,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Look at the robot wrist area in the diagram. What is an end effector?',
-      image: './quiz-robot-components.png',
+      image: `${import.meta.env.BASE_URL}quiz-robot-components.png`,
       imageCaption: 'The end effector is the tool attached at the wrist of the robot arm',
       options: ['The robot\'s power supply', 'A safety device', 'The tool attached to the robot\'s wrist', 'The programming interface'],
       correct: 2,
@@ -295,7 +295,7 @@ export const QUIZ_QUESTIONS = {
   'mod-3': [
     {
       question: 'Examine the sensor types shown. Which would you use to detect distance without contact?',
-      image: './quiz-sensors.png',
+      image: `${import.meta.env.BASE_URL}quiz-sensors.png`,
       imageCaption: 'Common sensor types in robotics — ultrasonic, IR, vision, force/torque, and IMU',
       options: ['Temperature sensor', 'Ultrasonic sensor', 'Pressure sensor', 'IMU'],
       correct: 1,
@@ -303,7 +303,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Find the IMU in the sensor diagram. What does it measure?',
-      image: './quiz-sensors.png',
+      image: `${import.meta.env.BASE_URL}quiz-sensors.png`,
       imageCaption: 'The IMU (Inertial Measurement Unit) combines multiple sensing elements',
       options: ['Temperature and humidity', 'Acceleration and angular velocity', 'Light intensity', 'Magnetic field only'],
       correct: 1,
@@ -311,7 +311,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Look at the vision camera sensor. Why is it increasingly important in robotics?',
-      image: './quiz-sensors.png',
+      image: `${import.meta.env.BASE_URL}quiz-sensors.png`,
       imageCaption: 'Vision cameras enable advanced object recognition and inspection capabilities',
       options: ['They make robots look more human', 'They enable object recognition and visual inspection', 'They replace all other sensors', 'They are cheaper than all alternatives'],
       correct: 1,
@@ -321,7 +321,7 @@ export const QUIZ_QUESTIONS = {
   'mod-4': [
     {
       question: 'Study the actuator comparison. What is the key advantage of a stepper motor over a DC motor?',
-      image: './quiz-actuators.png',
+      image: `${import.meta.env.BASE_URL}quiz-actuators.png`,
       imageCaption: 'Comparison of motor types — DC, Servo, Stepper, Hydraulic, and Pneumatic actuators',
       options: ['Higher maximum speed', 'Precise position control without feedback', 'Lower cost in all applications', 'Simpler wiring requirements'],
       correct: 1,
@@ -329,7 +329,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Compare the hydraulic and electric actuators in the diagram. When would you choose hydraulic?',
-      image: './quiz-actuators.png',
+      image: `${import.meta.env.BASE_URL}quiz-actuators.png`,
       imageCaption: 'Notice the size difference between hydraulic (high force) and electric (precision) actuators',
       options: ['For lightweight precision tasks', 'For very high force/payload applications', 'For battery-powered mobile robots', 'For quiet indoor environments'],
       correct: 1,
@@ -339,7 +339,7 @@ export const QUIZ_QUESTIONS = {
   'mod-5': [
     {
       question: 'Study the kinematics diagram. What does forward kinematics calculate?',
-      image: './quiz-kinematics.png',
+      image: `${import.meta.env.BASE_URL}quiz-kinematics.png`,
       imageCaption: 'Forward kinematics: from joint angles (θ₁, θ₂, θ₃) to end-effector position (X, Y, Z)',
       options: ['Joint angles from end-effector position', 'End-effector position from joint angles', 'Motor torque requirements', 'Sensor calibration values'],
       correct: 1,
@@ -347,7 +347,7 @@ export const QUIZ_QUESTIONS = {
     },
     {
       question: 'Look at the inverse kinematics arrows. Why is it computationally harder than forward?',
-      image: './quiz-kinematics.png',
+      image: `${import.meta.env.BASE_URL}quiz-kinematics.png`,
       imageCaption: 'Inverse kinematics: from desired position to required joint angles — multiple solutions possible',
       options: ['It requires more sensors', 'Multiple joint configurations can reach the same point', 'It needs a bigger controller', 'The motors run backwards'],
       correct: 1,
@@ -371,7 +371,7 @@ export const QUIZ_QUESTIONS = {
   'mod-7': [
     {
       question: 'Study the PID control diagram. What is the main advantage of closed-loop control over open-loop?',
-      image: './quiz-control-systems.png',
+      image: `${import.meta.env.BASE_URL}quiz-control-systems.png`,
       imageCaption: 'PID control loop: Set Point → Error → P/I/D → Plant → Output → Feedback',
       options: ['It is simpler to implement', 'It can correct errors using feedback', 'It uses less power', 'It is always faster'],
       correct: 1,
